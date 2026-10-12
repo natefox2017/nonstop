@@ -18,7 +18,7 @@ Camera/layout changes may pan/zoom/reframe to fit the usable battle rectangle, b
 
 ## Visual language and accessibility
 
-The enduring [visual direction](visual-direction.md) specifies an original grounded stylized fantasy world with readable, high-contrast controls. Visual style guidance does **not** by itself approve a specific Web page design; review each page/flow before implementation. Require explicit review of each production page/flow, including Equipment, Skills, Boss, reward, Pause, Settings and Ascend confirmation.
+The enduring [visual direction](visual-direction.md) specifies an original Pokémon-inspired chibi 3D adventure world with readable, high-contrast controls. Visual style guidance does **not** by itself approve a specific Web page design; review each page/flow before implementation. Require explicit review of each production page/flow, including Equipment, Skills, Boss, reward, Pause, Settings and Ascend confirmation.
 
 At nominal 720 x 1280, start with 8–12 logical-unit gaps, restrained surface strokes and comfortably separated touch actions; prove sizing at final CSS/device scale. Provide visible text/shape feedback in addition to color for rarity, equipped, selection, cooldown and disabled states. Skill silhouettes remain distinct in grayscale. Text, item stats and long translated labels wrap without covering close/confirm controls. Modals have appropriate roles, focus trap/restore and Escape behavior where applicable.
 
