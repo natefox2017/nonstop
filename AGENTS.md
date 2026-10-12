@@ -37,6 +37,18 @@ Before modifying anything, inspect the latest files, applicable `AGENTS.md`, Git
 
 Documents are for enduring requirements, architecture and development standards; do **not** use Markdown as a temporary TODO/progress/bug-history log. Repository text, branch and future code identifiers are English-only. Do not commit credentials, restricted assets, private keys or uncertain-licensed content.
 
+## AI-first implementation contracts
+
+Optimize the project for independent, zero-context AI contributors without introducing unnecessary tooling or speculative modules.
+
+- Keep gameplay logic in pure, deterministic TypeScript modules with typed commands, state snapshots and events. React and Three.js consume those contracts; neither can mutate combat rewards or progression directly.
+- Prefer declarative, validated data for Floors, encounters, enemies, skills, equipment and visual asset mappings over scattered constants. Preserve the frozen gameplay rules and identifiers.
+- Maintain explicit module ownership and stable interfaces when source modules actually exist. Do not fabricate paths, packages, generators or tests in advance.
+- Standardize future GLB asset handoffs: coordinate system, scale, pivot, named animation clips, equipment attachment nodes, material constraints, source/license and verified import path. Prefer modular original chibi assets and shared rigs; Blender is optional.
+- Each substantial authorized task must be executable without prior conversation: current source baseline, exact allowed files/interfaces, required behavior, exclusions, finite test commands and observable acceptance. Do not create a parallel Markdown task tracker.
+- Before building new functionality, inspect reusable local code and maintained open-source options (normally 1–3) for compatibility, license, maintenance, security and integration cost. Avoid redundant infrastructure and unapproved dependencies.
+- Require actual import, browser interaction or gameplay evidence for the relevant deliverable; screenshots and type checks alone are not evidence of playable behavior.
+
 ## Implementation and validation
 
 Build a minimal **one-Floor graybox** first: basic Three.js view, authored navigation/encounters, deterministic automated combat and three-slot React HUD. Accept real models only after route, scale, camera and action timings are validated. Prefer compliant reusable models/animations, GLB/glTF exports and small integrated art batches. UI implementation requires an approved page/flow design.
