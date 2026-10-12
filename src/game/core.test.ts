@@ -96,6 +96,7 @@ describe("authored Floor and deterministic combat", () => {
       highestFloor: 8,
       encounterIndex: 2,
       goalKills: 10,
+      skillLoadout: { slot1: "slam", slot2: "slash", slot3: "clone" },
       defeatedGoalIds: FLOOR_ONE.encounters.slice(0, 2).flatMap((item) => item.goals.map((enemy) => enemy.id)),
       hero: { ...initial.hero, position: { ...goal.position }, health: 1, attackTimer: 10 },
       enemies: [{
@@ -116,6 +117,7 @@ describe("authored Floor and deterministic combat", () => {
     expect(result.state.defeatedGoalIds).toEqual([]);
     expect(result.state.enemies).toEqual([]);
     expect(result.state.hero.health).toBe(result.state.hero.maxHealth);
+    expect(result.state.skillLoadout).toEqual({ slot1: "slam", slot2: "slash", slot3: "clone" });
   });
 
   it("returns a lost Boss attempt to Boss Ready at 20/20 and allows an explicit retry", () => {
@@ -152,5 +154,52 @@ describe("authored Floor and deterministic combat", () => {
     const second = dispatchCommand(first, { type: "cast-skill", skillId: "void" }).state;
     expect(first.skillCooldowns.void).toBeGreaterThan(0);
     expect(second.enemies[0]?.health).toBe(first.enemies[0]?.health);
+  });
+
+  it("switches skills only within their slot and preserves each skill cooldown", () => {
+    const initial = createInitialGameState();
+    const state: GameState = {
+      ...initial,
+      enemies: [{ ...enemy("durable-target", 0, 0), health: 100, maxHealth: 100 }],
+      hero: { ...initial.hero, position: { x: 0, z: 0 } },
+    };
+    const cast = dispatchCommand(state, { type: "cast-skill", skillId: "whirl" }).state;
+    const switched = dispatchCommand(cast, { type: "equip-skill", slot: "slot1", skillId: "slam" });
+    expect(switched.state.skillLoadout.slot1).toBe("slam");
+    expect(switched.state.skillCooldowns.whirl).toBeGreaterThan(0);
+    expect(switched.state.skillCooldowns.slam).toBe(0);
+    expect(switched.events).toContainEqual({ type: "skill-equipped", slot: "slot1", skillId: "slam" });
+    expect(dispatchCommand(switched.state, { type: "cast-skill", skillId: "whirl" }).state).toBe(switched.state);
+    expect(dispatchCommand(switched.state, { type: "equip-skill", slot: "slot2", skillId: "slam" }).state).toBe(switched.state);
+    expect(dispatchCommand(switched.state, { type: "equip-skill", slot: "slot1", skillId: "whirl" }).state.skillCooldowns.whirl)
+      .toBe(cast.skillCooldowns.whirl);
+  });
+
+  it("refreshes only the three equipped cooldowns when a Boss starts", () => {
+    const ready = {
+      ...createInitialGameState(),
+      floorNumber: 3,
+      highestFloor: 3,
+      phase: "boss-ready" as const,
+      goalKills: 20,
+      defeatedGoalIds: FLOOR_ONE.encounters.flatMap((encounter) => encounter.goals.map((goal) => goal.id)),
+      skillLoadout: { slot1: "slam" as const, slot2: "slash" as const, slot3: "clone" as const },
+      skillCooldowns: { whirl: 8, slam: 5, leap: 7, slash: 4, clone: 3, void: 2 },
+    };
+    const started = dispatchCommand(ready, { type: "start-boss" }).state;
+    expect(started.skillCooldowns).toEqual({ whirl: 8, slam: 0, leap: 7, slash: 0, clone: 0, void: 2 });
+  });
+
+  it("does not invent effects for catalog skills without an implemented effect", () => {
+    const initial = createInitialGameState();
+    const selected = dispatchCommand(initial, { type: "equip-skill", slot: "slot1", skillId: "slam" }).state;
+    const withTarget = {
+      ...selected,
+      enemies: [{ ...enemy("durable-target", 0, 0), health: 100, maxHealth: 100 }],
+      hero: { ...selected.hero, position: { x: 0, z: 0 } },
+    };
+    const result = dispatchCommand(withTarget, { type: "cast-skill", skillId: "slam" });
+    expect(result.state.skillCooldowns.slam).toBe(0);
+    expect(result.state.enemies[0]?.health).toBe(100);
   });
 });

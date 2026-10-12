@@ -1,6 +1,8 @@
 export type Point2 = { x: number; z: number };
 
-export type SkillId = "whirl" | "leap" | "void";
+export type SkillId = "whirl" | "slam" | "leap" | "slash" | "clone" | "void";
+export type SkillSlot = "slot1" | "slot2" | "slot3";
+export type SkillLoadout = Record<SkillSlot, SkillId>;
 export type GamePhase =
   | "exploring"
   | "boss-ready"
@@ -37,7 +39,7 @@ export type Enemy = {
 };
 
 export type GameState = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   floorNumber: number;
   highestFloor: number;
   phase: GamePhase;
@@ -46,6 +48,7 @@ export type GameState = {
   hero: { position: Point2; health: number; maxHealth: number; attackTimer: number };
   enemies: Enemy[];
   defeatedGoalIds: string[];
+  skillLoadout: SkillLoadout;
   skillCooldowns: Record<SkillId, number>;
   elapsedSeconds: number;
   floorClearTimer: number;
@@ -54,6 +57,7 @@ export type GameState = {
 
 export type GameCommand =
   | { type: "cast-skill"; skillId: SkillId }
+  | { type: "equip-skill"; slot: SkillSlot; skillId: SkillId }
   | { type: "start-boss" }
   | { type: "toggle-pause" };
 
@@ -62,6 +66,7 @@ export type GameEvent =
   | { type: "floor-cleared"; floorNumber: number }
   | { type: "boss-ready"; floorNumber: number }
   | { type: "boss-started"; floorNumber: number }
+  | { type: "skill-equipped"; slot: SkillSlot; skillId: SkillId }
   | { type: "hero-died"; floorNumber: number };
 
 export type StepResult = { state: GameState; events: GameEvent[] };

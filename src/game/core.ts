@@ -1,9 +1,20 @@
 import { FLOOR_ONE } from "./floor";
 import { GRAYBOX_TUNING } from "./tuning";
-import type { Enemy, GameCommand, GameEvent, GameState, Point2, StepResult } from "./types";
+import type { Enemy, GameCommand, GameEvent, GameState, Point2, SkillId, SkillSlot, StepResult } from "./types";
 
 const STEP = 1 / 30;
 const EPSILON = 0.0001;
+const SKILL_FAMILIES: Record<SkillSlot, readonly SkillId[]> = {
+  slot1: ["whirl", "slam"],
+  slot2: ["leap", "slash"],
+  slot3: ["clone", "void"],
+};
+
+function slotForSkill(skillId: SkillId): SkillSlot {
+  if (SKILL_FAMILIES.slot1.includes(skillId)) return "slot1";
+  if (SKILL_FAMILIES.slot2.includes(skillId)) return "slot2";
+  return "slot3";
+}
 
 function distance(a: Point2, b: Point2): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
@@ -33,7 +44,7 @@ function spawnGoals(encounterIndex: number): Enemy[] {
 export function createInitialGameState(): GameState {
   const start = FLOOR_ONE.route[0] ?? { x: -17, z: -5 };
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     floorNumber: 1,
     highestFloor: 1,
     phase: "exploring",
@@ -42,7 +53,8 @@ export function createInitialGameState(): GameState {
     hero: { position: { ...start }, health: 100, maxHealth: 100, attackTimer: 0 },
     enemies: [],
     defeatedGoalIds: [],
-    skillCooldowns: { whirl: 0, leap: 0, void: 0 },
+    skillLoadout: { slot1: "whirl", slot2: "leap", slot3: "void" },
+    skillCooldowns: { whirl: 0, slam: 0, leap: 0, slash: 0, clone: 0, void: 0 },
     elapsedSeconds: 0,
     floorClearTimer: 0,
     paused: false,
@@ -114,6 +126,15 @@ export function dispatchCommand(state: GameState, command: GameCommand): StepRes
   }
   if (state.paused) return { state, events: [] };
 
+  if (command.type === "equip-skill") {
+    if (!SKILL_FAMILIES[command.slot]?.includes(command.skillId)) return { state, events: [] };
+    if (state.skillLoadout[command.slot] === command.skillId) return { state, events: [] };
+    return {
+      state: { ...state, skillLoadout: { ...state.skillLoadout, [command.slot]: command.skillId } },
+      events: [{ type: "skill-equipped", slot: command.slot, skillId: command.skillId }],
+    };
+  }
+
   if (command.type === "start-boss") {
     if (state.phase !== "boss-ready" || state.floorNumber % 3 !== 0) return { state, events: [] };
     const boss: Enemy = {
@@ -126,12 +147,24 @@ export function dispatchCommand(state: GameState, command: GameCommand): StepRes
       attackTimer: 1.2,
     };
     return {
-      state: { ...state, phase: "boss-battle", enemies: [boss], skillCooldowns: { whirl: 0, leap: 0, void: 0 } },
+      state: {
+        ...state,
+        phase: "boss-battle",
+        enemies: [boss],
+        skillCooldowns: {
+          ...state.skillCooldowns,
+          [state.skillLoadout.slot1]: 0,
+          [state.skillLoadout.slot2]: 0,
+          [state.skillLoadout.slot3]: 0,
+        },
+      },
       events: [{ type: "boss-started", floorNumber: state.floorNumber }],
     };
   }
 
-  const skill = GRAYBOX_TUNING.skills[command.skillId];
+  if (state.skillLoadout[slotForSkill(command.skillId)] !== command.skillId) return { state, events: [] };
+  const skill = GRAYBOX_TUNING.skills[command.skillId as keyof typeof GRAYBOX_TUNING.skills];
+  if (!skill) return { state, events: [] };
   const remaining = state.skillCooldowns[command.skillId];
   if (state.phase !== "exploring" && state.phase !== "boss-battle") return { state, events: [] };
   if (remaining > 0) return { state, events: [] };
@@ -170,7 +203,10 @@ export function stepGame(state: GameState, deltaSeconds = STEP): StepResult {
     enemies: state.enemies.map((enemy) => ({ ...enemy, position: { ...enemy.position } })),
     skillCooldowns: {
       whirl: Math.max(0, state.skillCooldowns.whirl - dt),
+      slam: Math.max(0, state.skillCooldowns.slam - dt),
       leap: Math.max(0, state.skillCooldowns.leap - dt),
+      slash: Math.max(0, state.skillCooldowns.slash - dt),
+      clone: Math.max(0, state.skillCooldowns.clone - dt),
       void: Math.max(0, state.skillCooldowns.void - dt),
     },
     defeatedGoalIds: [...state.defeatedGoalIds],
@@ -234,7 +270,13 @@ export function stepGame(state: GameState, deltaSeconds = STEP): StepResult {
       return { state: next, events };
     } else {
       const reset = createInitialGameState();
-      Object.assign(next, reset, { floorNumber: lostFloor, highestFloor: next.highestFloor, elapsedSeconds: next.elapsedSeconds });
+      const skillLoadout = next.skillLoadout;
+      Object.assign(next, reset, {
+        floorNumber: lostFloor,
+        highestFloor: next.highestFloor,
+        elapsedSeconds: next.elapsedSeconds,
+        skillLoadout,
+      });
       events.push({ type: "hero-died", floorNumber: lostFloor });
       return { state: next, events };
     }
