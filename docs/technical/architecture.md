@@ -35,7 +35,7 @@ The graybox runs a main-thread 30 Hz fixed-step loop with `requestAnimationFrame
 | `src/render/WorldRenderer.ts` | Current procedural Three.js scene, camera, geometry and character placeholders | Hit/kill/reward authority |
 | `src/ui/App.tsx`, `src/ui/styles.css` | Current responsive graybox HUD, accessibility and command dispatch | Game tick timers and save rewriting |
 | `src/app/startRuntime.ts` | Current startup and capped fixed-step loop | Parallel gameplay rule copies |
-| `src/game/persistence/` | Future migrations, last-good recovery and offline calculation | Direct scene mutation or rewards outside core |
+| `src/game/persistence/` | Future migrations, expanded save/recovery and offline calculation | Direct scene mutation or rewards outside core |
 
 No manager, event bus, service container, multiplayer layer or backend should be created without its first concrete consumer and acceptance case. Use Three.js native loaders/animation/camera features instead of rebuilding existing functionality. Introduce a third-party navmesh/physics dependency only when real geometry and tests show why a simpler authored solution fails.
 

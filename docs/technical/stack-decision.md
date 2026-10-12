@@ -23,7 +23,7 @@ The browser is the initial target; Android/iOS packaging and cloud services are 
 - **Vite** is the build/dev tool with strict TypeScript. Actual version: `8.3.4`.
 - **Vitest** runs deterministic game-rule tests. Actual version: `5.0.3`.
 - **Playwright CLI** is used for live browser smoke checks and screenshot capture. It is not a committed test dependency.
-- **IndexedDB** stores complete version-1 `GameState` snapshots through a typed storage module. Versioned migrations, last-good recovery and offline settlement remain future requirements.
+- **IndexedDB** stores complete version-1 `GameState` snapshots through a typed storage module. Last-good recovery and future-schema refusal are implemented; versioned migrations and offline settlement remain future requirements.
 - **Three.js GLTFLoader and AnimationMixer** for asset loading and animation, without writing redundant parsers.
 - **No physics engine by default**: use authored routes and simple collision queries for the first Floor. Evaluate Rapier only if a demonstrated gameplay requirement needs full rigid-body physics.
 - **Authored waypoint graph** for the first Floor, with reachable-distance targeting and deterministic stable-ID ties. Evaluate a maintained navigation library only if authored maps outgrow the graph contract.
@@ -61,6 +61,6 @@ Simulation steps and reward commits are independent from animation frame rate, s
 
 ## Remaining design decisions
 
-The **core stack is settled and installed**. The runtime uses a 30 Hz candidate fixed-step, one authored straight-line waypoint Floor, no physics dependency, a subscription-safe React HUD and an IndexedDB version-1 snapshot. These remain graybox contracts pending broader browser/device performance measurement, save migration/recovery and production page-design approval. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
+The **core stack is settled and installed**. The runtime uses a 30 Hz candidate fixed-step, one authored straight-line waypoint Floor, no physics dependency, a subscription-safe React HUD and an IndexedDB version-1 snapshot with last-good recovery. These remain graybox contracts pending broader browser/device performance measurement, save migrations and production page-design approval. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
 
 Follow the [staged validation plan](validation-plan.md): functional graybox first; one integrated representative hero/enemy/island asset batch next; scale art and features only after rendered acceptance. Preserve originality and license provenance.

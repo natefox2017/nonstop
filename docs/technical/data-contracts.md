@@ -38,11 +38,11 @@ Exactly `weapon`, `armor`, `cloak` are gameplay slots. Each item instance stores
 
 ## Durable run state and migration
 
-The current version-1 `GameState` snapshot contains `schemaVersion`, Floor and phase, current/lifetime-high Floor numbers, encounter index, goal kills/defeated IDs, Hero and enemy simulation values, skill cooldowns, elapsed play time, Floor-clear timer and pause state. It is stored as one IndexedDB record. The broader target snapshot adds the durable progression domains below once implemented: `runId`, `epoch`, `rulesetId`, Coins/Tokens, Knight Level/XP, inventory/equipped item IDs, skill forms, permanent upgrades and consumables.
+The current version-1 `GameState` snapshot contains `schemaVersion`, Floor and phase, current/lifetime-high Floor numbers, encounter index, goal kills/defeated IDs, Hero and enemy simulation values, skill cooldowns, elapsed play time, Floor-clear timer and pause state. IndexedDB stores the current snapshot and a last-good snapshot in one object store. The broader target snapshot adds the durable progression domains below once implemented: `runId`, `epoch`, `rulesetId`, Coins/Tokens, Knight Level/XP, inventory/equipped item IDs, skill forms, permanent upgrades and consumables.
 
 This is a **domain contract**, not a frozen JSON field implementation. Distinguish current-run Floor from lifetime highestFloor. Never serialize Three.js objects, actor pointers, path cache, animation state, running wall-clock timers or GPU resources. Explicitly decide whether skill cooldowns are restored or reconstructed at encounter boundaries; do not infer from old save formats.
 
-Restore/integrity-check inventory and equipment before calculating offline rewards. Migrations operate on an in-memory copy, never downgrade future schemas, and commit one complete result or leave the last-valid snapshot unchanged. Implementation details live in [persistence](persistence-and-offline.md).
+The current save adapter validates the entire snapshot, atomically writes the current and last-good records, and quarantines a damaged current record when a recovered snapshot is next saved. It refuses current records from a future schema without falling back or overwriting them. Version migrations, progression-domain integrity checks and offline settlement remain unimplemented. Restore/integrity-check inventory and equipment before calculating offline rewards. Migrations must operate on an in-memory copy, never downgrade future schemas, and commit one complete result or leave the last-valid snapshot unchanged. Implementation details live in [persistence](persistence-and-offline.md).
 
 ## Required tests after implementation
 
