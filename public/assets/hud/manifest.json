@@ -1,0 +1,130 @@
+{
+  "assets": [
+    {
+      "file": "battle-button-blank-v1.png",
+      "width": 2172,
+      "height": 724,
+      "format": "RGBA PNG",
+      "sha256": "ca69bc9a43b72cc6878fbfa99627bafebdcaacb8242b29406eaf9f1076524050",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "encounter-diamond-active-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "90a79fcce5b6dae4ae2509d63c0b0e09f2503f81f8c3bccc0641b84391a1d9c8",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "encounter-diamond-inactive-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "67d21da58fa97f39d545476282532b1a15737c54c26d78f00b7cda52ab102c60",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "floor-badge-blank-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "3ca3a75bb2e7b42dadc8a9409ffa547e21935fe2d4004bc10fc27ee40aebda3d",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "health-fill-green-v1.png",
+      "width": 2172,
+      "height": 724,
+      "format": "RGBA PNG",
+      "sha256": "e42954bb5dee32f51ff4d3f6590c596fc77a2540201b003ad93ed7af48a08ff0",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "health-heart-frame-v1.png",
+      "width": 1983,
+      "height": 793,
+      "format": "RGBA PNG",
+      "sha256": "8fc421985b1277bd1bcc4c6d1cd112e903fa9de145f800dd8b37cf2b496a563c",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "pause-button-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "0103079a1107813e56bcecad35634e254b0f9fb0d86ccd41864cf516975b4584",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "progress-backplate-blank-v1.png",
+      "width": 2172,
+      "height": 724,
+      "format": "RGBA PNG",
+      "sha256": "560604e5908fdef56aa77eb76ed73b1e195101d0e684ef8ab318cc691a43d7a8",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "resume-button-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "5547ab1df7a9e0d0dd6eeb01b408a25090cdebe01351bc3689881907ef56981a",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "skill-leap-ready-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "b3e23f65a446b735ad8117f62387a466abf2bbfd75331d1da9d7cc8835676ad9",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "skill-void-ready-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "ec3cd9133d6ace87a8242829bde6bcb326333ea0bc87e7defc93203510ea4db5",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    },
+    {
+      "file": "skill-whirl-ready-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "sha256": "13d9a355c57365f9ed451a7ba23b27a70de712c21a8950b4f36e2d2f86482c6d",
+      "source": "Original Nonstop HUD artwork supplied for integration from the user-approved design direction",
+      "usage": "DOM HUD image only; never a replacement for the Three.js scene"
+    }
+  ],
+  "pixelRegions": {
+    "health-heart-frame-v1.png": {
+      "safeFillSlot": [
+        550,
+        322,
+        1290,
+        144
+      ]
+    },
+    "health-fill-green-v1.png": {
+      "greenPixels": [
+        161,
+        289,
+        1850,
+        146
+      ]
+    }
+  }
+}
