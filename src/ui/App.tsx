@@ -1,5 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { gameStore } from "../game/store";
+import { createAudioFeedback } from "../audio/feedback";
 import type { SkillId } from "../game/types";
 import "./styles.css";
 
@@ -34,6 +35,20 @@ export function App() {
     return () => {
       cancelled = true;
       dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = createAudioFeedback();
+    const unlock = () => audio.unlock();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    const unsubscribe = gameStore.subscribeEvents(audio.play);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      unsubscribe();
+      audio.dispose();
     };
   }, []);
 

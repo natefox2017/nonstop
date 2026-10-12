@@ -62,6 +62,10 @@ export type GameCommand =
   | { type: "toggle-pause" };
 
 export type GameEvent =
+  | { type: "skill-cast"; skillId: "whirl" | "leap" | "void"; heroFrom: Point2; heroTo: Point2; targetId: string; affectedEnemyIds: string[] }
+  | { type: "basic-attack"; targetId: string; position: Point2 }
+  | { type: "enemy-hit"; enemyId: string; damage: number; healthAfter: number; source: "basic" | "whirl" | "leap" | "void"; position: Point2 }
+  | { type: "hero-hit"; damage: number; healthAfter: number }
   | { type: "enemy-defeated"; enemyId: string; isGoal: boolean }
   | { type: "floor-cleared"; floorNumber: number }
   | { type: "boss-ready"; floorNumber: number }

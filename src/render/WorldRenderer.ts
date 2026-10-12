@@ -1,9 +1,66 @@
 import * as THREE from "three";
 import { FLOOR_ONE } from "../game/floor";
 import { gameStore } from "../game/store";
-import type { GameState, Point2 } from "../game/types";
+import type { GameEvent, GameState, Point2 } from "../game/types";
 
 const material = (color: string, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
+const ACTOR_ASSET_ROOT = "/assets/cc0-test-set/";
+
+type AnimatedActor = {
+  root: THREE.Group;
+  mixer: THREE.AnimationMixer;
+  actions: Map<string, THREE.AnimationAction>;
+  current?: string;
+  busyUntil: number;
+  groundOffset: number;
+  dyingUntil?: number;
+};
+
+type RingEffect = { mesh: THREE.Mesh; startedAt: number; duration: number; baseScale: number };
+
+function actorActions(root: THREE.Group, clips: THREE.AnimationClip[]): AnimatedActor {
+  const mixer = new THREE.AnimationMixer(root);
+  const actions = new Map(clips.map((clip) => {
+    const tracks = clip.tracks.filter((track) => !/(^|\\.)root\\.position$/.test(track.name));
+    const clean = new THREE.AnimationClip(clip.name, clip.duration, tracks);
+    return [clean.name, mixer.clipAction(clean)];
+  }));
+  return { root, mixer, actions, busyUntil: 0, groundOffset: 0 };
+}
+
+function playActor(actor: AnimatedActor, name: string, seconds: number, repeat = false): void {
+  const next = actor.actions.get(name);
+  if (!next) return;
+  if (actor.current === name && next.isRunning()) return;
+  const current = actor.current ? actor.actions.get(actor.current) : undefined;
+  next.reset().setLoop(repeat ? THREE.LoopRepeat : THREE.LoopOnce, repeat ? Infinity : 1);
+  next.clampWhenFinished = !repeat;
+  next.fadeIn(0.11).play();
+  current?.fadeOut(0.11);
+  actor.current = name;
+  actor.busyUntil = repeat ? 0 : performance.now() / 1000 + seconds;
+}
+
+function fitActor(root: THREE.Group, targetHeight: number): number {
+  root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(root);
+  const height = Math.max(bounds.max.y - bounds.min.y, 0.001);
+  root.scale.setScalar(targetHeight / height);
+  root.updateMatrixWorld(true);
+  const fitted = new THREE.Box3().setFromObject(root);
+  const ground = -fitted.min.y;
+  root.position.y = ground;
+  return ground;
+}
+
+function releaseObject(root: THREE.Object3D): void {
+  root.traverse((node) => {
+    if (!(node instanceof THREE.Mesh)) return;
+    node.geometry.dispose();
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    materials.forEach((entry) => entry.dispose());
+  });
+}
 
 function makeHero(): THREE.Group {
   const hero = new THREE.Group();
@@ -175,8 +232,110 @@ export function mountWorld(container: HTMLElement): () => void {
   const hero = makeHero();
   scene.add(hero);
   const enemyMeshes = new Map<string, THREE.Group>();
+  const modelEnemies = new Map<string, AnimatedActor>();
+  const ringEffects: RingEffect[] = [];
+  const pendingEvents: GameEvent[] = [];
+  const modelMixers: THREE.AnimationMixer[] = [];
+  const sourceScenes: THREE.Group[] = [];
+  let cloneSkinned: typeof import("three/addons/utils/SkeletonUtils.js").clone | undefined;
+  let modelHero: AnimatedActor | undefined;
+  let barbarianSource: THREE.Group | undefined;
+  let modelClips: THREE.AnimationClip[] = [];
+  let usingModels = false;
+  let disposed = false;
+  let previousFrameAt: number | undefined;
   let latest = gameStore.getSnapshot();
   const unsubscribe = gameStore.subscribe(() => { latest = gameStore.getSnapshot(); });
+  const unsubscribeEvents = gameStore.subscribeEvents((events) => pendingEvents.push(...events));
+
+  const makeModel = (source: THREE.Group, height: number): AnimatedActor => {
+    const root = cloneSkinned?.(source) as THREE.Group | undefined;
+    if (!root) throw new Error("Skinned model clone helper was not loaded.");
+    const actor = actorActions(root, modelClips);
+    actor.groundOffset = fitActor(root, height);
+    modelMixers.push(actor.mixer);
+    return actor;
+  };
+  const addEnemyModel = (enemy: GameState["enemies"][number]) => {
+    if (!barbarianSource || modelEnemies.has(enemy.id)) return;
+    const actor = makeModel(barbarianSource, enemy.kind === "boss" ? 3.4 : 2.35);
+    modelEnemies.set(enemy.id, actor);
+    scene.add(actor.root);
+    playActor(actor, "Melee_Unarmed_Idle", 0, true);
+  };
+  void Promise.all([
+    import("three/addons/loaders/GLTFLoader.js"),
+    import("three/addons/utils/SkeletonUtils.js"),
+  ]).then(async ([{ GLTFLoader }, skeletonUtils]) => {
+    cloneSkinned = skeletonUtils.clone;
+    const loader = new GLTFLoader();
+    const [knight, barbarian, general, movement, combat] = await Promise.all([
+      loader.loadAsync(`${ACTOR_ASSET_ROOT}Knight.glb`),
+      loader.loadAsync(`${ACTOR_ASSET_ROOT}Barbarian.glb`),
+      loader.loadAsync(`${ACTOR_ASSET_ROOT}Rig_Medium_General.glb`),
+      loader.loadAsync(`${ACTOR_ASSET_ROOT}Rig_Medium_MovementBasic.glb`),
+      loader.loadAsync(`${ACTOR_ASSET_ROOT}Rig_Medium_CombatMelee.glb`),
+    ]);
+    const loadedScenes = [knight.scene, barbarian.scene, general.scene, movement.scene, combat.scene];
+    if (disposed) {
+      loadedScenes.forEach(releaseObject);
+      return;
+    }
+    sourceScenes.push(...loadedScenes);
+    barbarianSource = barbarian.scene;
+    modelClips = [...general.animations, ...movement.animations, ...combat.animations];
+    modelHero = makeModel(knight.scene, 2.5);
+    scene.add(modelHero.root);
+    playActor(modelHero, "Idle_A", 0, true);
+    for (const enemy of latest.enemies) addEnemyModel(enemy);
+    usingModels = true;
+    hero.visible = false;
+    for (const mesh of enemyMeshes.values()) mesh.visible = false;
+  }).catch((error: unknown) => {
+    if (disposed) return;
+    container.dataset.modelFallback = "true";
+    console.warn("Temporary CC0 actor models could not be loaded; using procedural graybox actors.", error);
+  });
+
+  const emitRing = (point: Point2, color: string, scale: number, duration: number, now: number) => {
+    const mesh = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.055, 8, 40),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.78, depthWrite: false }),
+    );
+    mesh.rotation.x = Math.PI / 2;
+    mesh.position.set(point.x, 0.16, point.z);
+    mesh.scale.setScalar(0.28);
+    scene.add(mesh);
+    ringEffects.push({ mesh, startedAt: now, duration, baseScale: scale });
+  };
+
+  const processEvents = (now: number) => {
+    for (const event of pendingEvents.splice(0)) {
+      if (event.type === "skill-cast") {
+        if (modelHero) {
+          const clip = event.skillId === "whirl" ? "Melee_2H_Attack_Spinning"
+            : event.skillId === "leap" ? "Jump_Full_Short" : "Use_Item";
+          playActor(modelHero, clip, event.skillId === "leap" ? 0.55 : 0.72);
+        }
+        if (event.skillId === "whirl") emitRing(event.heroTo, "#f7ba51", 4.2, 0.45, now);
+        if (event.skillId === "leap") emitRing(event.heroTo, "#68d4e6", 2.9, 0.38, now);
+      } else if (event.type === "basic-attack") {
+        if (modelHero) playActor(modelHero, "Melee_1H_Attack_Slice_Horizontal", 0.52);
+      } else if (event.type === "enemy-hit") {
+        const actor = modelEnemies.get(event.enemyId);
+        if (actor) playActor(actor, "Hit_A", 0.3);
+        emitRing(event.position, event.source === "basic" ? "#fff0ba" : "#86e9ed", 1.4, 0.2, now);
+      } else if (event.type === "hero-hit") {
+        if (modelHero) playActor(modelHero, "Hit_A", 0.32);
+      } else if (event.type === "enemy-defeated") {
+        const actor = modelEnemies.get(event.enemyId);
+        if (actor) {
+          actor.dyingUntil = now + 1.05;
+          playActor(actor, "Death_A", 0.9);
+        }
+      }
+    }
+  };
 
   const resize = () => {
     const width = Math.max(container.clientWidth, 1);
@@ -191,6 +350,12 @@ export function mountWorld(container: HTMLElement): () => void {
 
   renderer.setAnimationLoop(() => {
     const state: GameState = latest;
+    const frameAt = performance.now();
+    const dt = previousFrameAt === undefined ? 0 : Math.min((frameAt - previousFrameAt) / 1000, 0.05);
+    previousFrameAt = frameAt;
+    const now = frameAt / 1000;
+    processEvents(now);
+    hero.visible = !usingModels;
     hero.position.set(state.hero.position.x, 0, state.hero.position.z);
     const target = state.enemies[0];
     if (target) {
@@ -221,19 +386,70 @@ export function mountWorld(container: HTMLElement): () => void {
         enemyMeshes.set(enemy.id, mesh);
         scene.add(mesh);
       }
+      mesh.visible = !usingModels;
       mesh.position.set(enemy.position.x, 0, enemy.position.z);
       const bob = state.elapsedSeconds * 2 + enemy.id.length;
       mesh.position.y += Math.sin(bob) * 0.055;
       const facing = Math.atan2(state.hero.position.x - enemy.position.x, state.hero.position.z - enemy.position.z);
       mesh.rotation.y = facing;
     }
+
+    if (usingModels && modelHero) {
+      const moving = Math.hypot(state.hero.position.x - modelHero.root.position.x, state.hero.position.z - modelHero.root.position.z) > 0.025;
+      modelHero.root.position.set(state.hero.position.x, modelHero.groundOffset, state.hero.position.z);
+      if (target) modelHero.root.rotation.y = Math.atan2(target.position.x - state.hero.position.x, target.position.z - state.hero.position.z);
+      if (now >= modelHero.busyUntil) playActor(modelHero, moving ? "Running_A" : "Idle_A", 0, true);
+      modelHero.mixer.update(dt);
+
+      for (const enemy of state.enemies) addEnemyModel(enemy);
+      for (const [id, actor] of modelEnemies) {
+        const enemy = state.enemies.find((candidate) => candidate.id === id);
+        if (!enemy && (!actor.dyingUntil || now >= actor.dyingUntil)) {
+          scene.remove(actor.root);
+          modelEnemies.delete(id);
+          continue;
+        }
+        if (enemy) {
+          const dx = enemy.position.x - state.hero.position.x;
+          const dz = enemy.position.z - state.hero.position.z;
+          const distance = Math.hypot(dx, dz) || 1;
+          const visualSeparation = enemy.kind === "boss" ? 0.6 : 0.3;
+          actor.root.position.set(
+            enemy.position.x + dx / distance * visualSeparation,
+            actor.groundOffset,
+            enemy.position.z + dz / distance * visualSeparation,
+          );
+          actor.root.rotation.y = Math.atan2(state.hero.position.x - enemy.position.x, state.hero.position.z - enemy.position.z);
+          if (now >= actor.busyUntil && !actor.dyingUntil) playActor(actor, "Melee_Unarmed_Idle", 0, true);
+        }
+        actor.mixer.update(dt);
+      }
+    }
+
+    for (let i = ringEffects.length - 1; i >= 0; i -= 1) {
+      const effect = ringEffects[i];
+      const progress = Math.min((now - effect.startedAt) / effect.duration, 1);
+      effect.mesh.scale.setScalar(0.28 + (effect.baseScale - 0.28) * progress);
+      const fade = 1 - progress;
+      (effect.mesh.material as THREE.MeshBasicMaterial).opacity = 0.78 * fade;
+      if (progress >= 1) {
+        scene.remove(effect.mesh);
+        effect.mesh.geometry.dispose();
+        (effect.mesh.material as THREE.MeshBasicMaterial).dispose();
+        ringEffects.splice(i, 1);
+      }
+    }
     renderer.render(scene, camera);
   });
 
   return () => {
+    disposed = true;
     unsubscribe();
+    unsubscribeEvents();
     observer.disconnect();
     renderer.setAnimationLoop(null);
+    modelMixers.forEach((mixer) => mixer.stopAllAction());
+    sourceScenes.forEach(releaseObject);
     for (const mesh of [hero, ...enemyMeshes.values()]) {
       mesh.traverse((node) => {
         if (node instanceof THREE.Mesh) {
