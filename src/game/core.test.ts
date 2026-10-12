@@ -85,6 +85,63 @@ describe("authored Floor and deterministic combat", () => {
     expect(started.events).toContainEqual({ type: "boss-started", floorNumber: 3 });
   });
 
+  it("retries a normal Floor from encounter one at 0/20 without lowering the high Floor", () => {
+    const encounter = FLOOR_ONE.encounters[2];
+    const goal = encounter?.goals[0];
+    if (!encounter || !goal) throw new Error("Expected a registered goal in encounter three.");
+    const initial = createInitialGameState();
+    const dying: GameState = {
+      ...initial,
+      floorNumber: 4,
+      highestFloor: 8,
+      encounterIndex: 2,
+      goalKills: 10,
+      defeatedGoalIds: FLOOR_ONE.encounters.slice(0, 2).flatMap((item) => item.goals.map((enemy) => enemy.id)),
+      hero: { ...initial.hero, position: { ...goal.position }, health: 1, attackTimer: 10 },
+      enemies: [{
+        id: goal.id,
+        kind: "goal",
+        encounterId: encounter.id,
+        position: { ...goal.position },
+        health: 1000,
+        maxHealth: 1000,
+        attackTimer: 0,
+      }],
+    };
+
+    const result = stepGame(dying);
+
+    expect(result.events).toContainEqual({ type: "hero-died", floorNumber: 4 });
+    expect(result.state).toMatchObject({ floorNumber: 4, highestFloor: 8, phase: "exploring", encounterIndex: 0, goalKills: 0 });
+    expect(result.state.defeatedGoalIds).toEqual([]);
+    expect(result.state.enemies).toEqual([]);
+    expect(result.state.hero.health).toBe(result.state.hero.maxHealth);
+  });
+
+  it("returns a lost Boss attempt to Boss Ready at 20/20 and allows an explicit retry", () => {
+    const ready = runUntil(
+      { ...createInitialGameState(), floorNumber: 3, highestFloor: 3 },
+      (state) => state.phase === "boss-ready",
+    );
+    const started = dispatchCommand(ready, { type: "start-boss" }).state;
+    const boss = started.enemies[0];
+    if (!boss) throw new Error("Expected the Boss to start.");
+    const dying: GameState = {
+      ...started,
+      hero: { ...started.hero, position: { ...boss.position }, health: 1, attackTimer: 10 },
+      enemies: started.enemies.map((enemy) => ({ ...enemy, attackTimer: 0, health: 1000, maxHealth: 1000 })),
+    };
+
+    const lost = stepGame(dying);
+
+    expect(lost.events).toContainEqual({ type: "hero-died", floorNumber: 3 });
+    expect(lost.state).toMatchObject({ phase: "boss-ready", floorNumber: 3, goalKills: 20 });
+    expect(lost.state.enemies).toEqual([]);
+    expect(lost.state.defeatedGoalIds).toHaveLength(20);
+    expect(lost.state.hero.health).toBe(lost.state.hero.maxHealth);
+    expect(dispatchCommand(lost.state, { type: "start-boss" }).state.phase).toBe("boss-battle");
+  });
+
   it("keeps cooldowns authoritative and rejects a second cast", () => {
     const state: GameState = {
       ...createInitialGameState(),
