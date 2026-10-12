@@ -18,18 +18,33 @@ This decision is final for the project's initial browser implementation unless t
 
 The browser is the initial target; Android/iOS packaging and cloud services are not part of this foundation. The gameplay view is portrait-only. This is a **Web game stack**, not a claim that Three.js supplies an integrated game-engine editor, AI navigation, physical simulation or persistence on its own.
 
-## Implementation tool recommendations (not yet installed)
+## Selected implementation tooling (not yet installed)
 
-- **Vite** for development/build, using supported version and strict TypeScript settings chosen when scaffolding.
-- **Vitest** for deterministic game rules and data validation tests.
-- **Playwright** for browser startup, portrait resize, modal interactions, keyboard/focus and regression captures.
-- **IndexedDB** for versioned atomic local game saves, accessed behind a small typed storage interface.
+- **Vite** as the build/dev tool with strict TypeScript; pin mutually compatible stable versions in the first implementation lockfile.
+- **Vitest** as the unit/integration test runner for deterministic game rules and data validation.
+- **Playwright** as the browser test runner for startup, portrait resize, modal interactions, keyboard/focus and WebGL smoke checks.
+- **IndexedDB** for versioned atomic local game saves, accessed through a typed storage interface with complete transactional snapshots.
 - **Three.js GLTFLoader and AnimationMixer** for asset loading and animation, without writing redundant parsers.
-- **Rapier** only if a real collision/physics need remains after an authored floor graybox; do not install reflexively.
-- Existing maintained pathfinding/navmesh components evaluated against authored route/arena geometry before custom algorithms.
-- A minimal typed UI subscription adapter; add **Zustand** only if state complexity requires it. The React render loop never owns the gameplay tick.
+- **No physics engine by default**: use authored routes and simple collision queries for the first Floor. Evaluate Rapier only if a demonstrated gameplay requirement needs full rigid-body physics.
+- **Authored waypoint graph** for the first Floor, with reachable-distance targeting and deterministic stable-ID ties. Evaluate a maintained navigation library only if authored maps outgrow the graph contract.
+- **React useSyncExternalStore** with a typed immutable snapshot adapter for HUD state. No Zustand or additional state manager until concrete needs justify it; React never owns the gameplay tick.
 
 Record actual package versions, licenses, browser support and performance constraints when dependencies are added. Avoid a speculative managers/services framework; build the smallest complete vertical slice.
+
+## Why not Phaser or React Three Fiber
+
+- **Phaser is not selected.** It is primarily a 2D game framework and would add a second scene/render/input lifecycle to this Three.js 3D project. Do not install it or copy Phaser-specific scene APIs into the implementation.
+- **React Three Fiber is not selected for the initial runtime.** Use imperative Three.js for the scene and React DOM for UI to keep one render owner and straightforward deterministic simulation boundaries. Reconsider only through an explicitly approved architecture change.
+- **Blender is an optional asset editor, not a game framework.** The browser must run without it.
+
+## First implementation contract
+
+- Scaffold only the approved Vite + React + TypeScript + Three.js browser application, plus Vitest and Playwright when their first required tests are implemented. Record actual dependency versions in the lockfile; no versions are currently installed.
+- GameCore uses deterministic fixed-step updates, typed commands and events, and immutable snapshots. Use a candidate 30 Hz simulation step initially; confirm or adjust with measured tests before treating it as a frozen performance contract.
+- One authored Floor template provides waypoint navigation, walkable bounds, spawn anchors and four ordered encounters. GLB meshes are visuals, not navigation or reward authorities.
+- React renders an accessible portrait DOM HUD using useSyncExternalStore; Three.js owns canvas rendering, GLTFLoader, AnimationMixer and visual effects. Neither UI nor renderer may independently grant kills or rewards.
+- Use IndexedDB with schema validation and atomic checkpoint writes. No server, multiplayer, physics engine or speculative manager framework in the first slice.
+- Maintain original chibi 3D art and the frozen gameplay invariants. No Pokémon franchise assets and no mechanic changes.
 
 ## Architecture boundaries
 
@@ -46,6 +61,6 @@ Simulation steps and reward commits are independent from animation frame rate, s
 
 ## Remaining design decisions
 
-The **core stack is settled**. Only implementation details still require scoped evidence: versions and minimum browser class, fixed-step clock choice, walkable graph/navmesh representation, collision approach, viewport GPU budgets, first UI design approval and exact save schema. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
+The **core stack is settled**. Implementation evidence is still needed for actual package versions and minimum browser class, measured fixed-step performance, viewport GPU budgets, first UI design approval and exact save schema. The initial waypoint navigation, no-physics default and React subscription approach are selected above; they are not installed implementations. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
 
 Follow the [staged validation plan](validation-plan.md): functional graybox first; one integrated representative hero/enemy/island asset batch next; scale art and features only after rendered acceptance. Preserve originality and license provenance.
