@@ -33,8 +33,8 @@ See [core-loop.md](core-loop.md) for the state contract.
 ## Original presentation direction
 
 - World: large, continuous floating landmasses above a cloud sea rather than underground dungeons.
-- Art: grounded, moderately stylized 3D fantasy with realistic material response, natural heroic proportions, sunlit floating islands and readable silhouettes.
-- UI: compact layered fantasy HUD with controlled accents, clear iconography and large touch targets.
+- Art: original Pokémon-inspired chibi 3D adventure aesthetic, with rounded stylized characters, expressive silhouettes, bright outdoor floating islands, simple materials and animation-friendly geometry suited to Three.js. No franchise characters, creatures, logos or copied assets.
+- UI: friendly rounded original adventure HUD with controlled accents, clear iconography and large touch targets; all gameplay controls and behavior stay unchanged.
 - Map structure: one authored landmass per Floor template, one protected main route, no world-map route choice.
 - Orientation: portrait only, with responsive portrait sizing over the future renderer and DOM overlay. Development defaults to a 540x960 window and 720x1280 logical canvas.
 
