@@ -2,7 +2,7 @@
 
 ## Art statement
 
-Nevercrest is a sunlit 3D fantasy adventure on a continuous floating landmass above a cloud sea. The art is grounded and moderately stylized: natural heroic proportions, weathered stone and metal, textured grass and foliage, controlled highlights and legible silhouettes. Avoid chibi proportions, toy-like saturation and enclosed dark dungeons. The palette stays bright enough for automatic combat to be readable.
+Nevercrest is a sunlit 3D fantasy adventure on a continuous floating landmass above a cloud sea. The art uses an original Pokémon-inspired chibi 3D adventure language: friendly compact silhouettes, oversized expressive heads, simplified anatomy, rounded forms, bright but controlled color blocks and clean readable materials. It must be feasible in Three.js with simple meshes, reusable materials and modest animation rigs. Avoid photorealism, excessive detail and enclosed dark dungeons. Pokémon characters, distinctive creatures, Poké Balls, logos and recognizable franchise assets are not permitted. The palette stays bright enough for automatic combat to be readable.
 
 The reference game's assets, UI layout, icons, typography, characters, effects and level geometry are not production inputs.
 
@@ -36,21 +36,21 @@ These are design tokens, not a requirement that every texture use flat colors.
 ## Character language
 
 - Hero silhouette reads at small portrait-gameplay scale.
-- Keep credible armor and body proportions; emphasize the weapon and cloak silhouette rather than enlarging the head or hands.
+- Use consistent chibi proportions (approximately 2.5–3.5 heads tall as an art-direction target, subject to camera readability), expressive heads and hands, and clear weapon/cloak silhouettes.
 - Equipment changes must remain visible without requiring a new skeleton or controller.
 - Enemies use clear family silhouettes and attack anticipation rather than texture-heavy detail.
 - Hit feedback combines pose, small hit stop, directional VFX and concise audio; screen shake remains limited.
 
 ## UI language
 
-- Compact translucent or restrained neutral panels; avoid oversized cream toy-like cards.
+- Rounded, friendly, compact panels with crisp iconography and readable touch targets; avoid copying Pokémon game UI compositions or icon designs.
 - Interface surfaces follow the bright warm-panel/pale-blue-card/navy-ink/gold-frame semantic palette in the [HUD contract](hud-layout.md). World and VFX palette tokens above remain separate.
 - High-contrast text and understated metallic accents that do not obscure the island.
 - Large, separated skill buttons with icon, cooldown mask and optional numerical cooldown.
 - No basic-attack button and no movement joystick.
 - The central combat viewport remains mostly unobstructed.
 - Minimum touch target: 96 × 96 px at the 1080 × 1920 baseline.
-- Motion uses subtle fades and controlled scale; avoid elastic/bouncy cartoon behavior and heavy dungeon ornament.
+- Motion may use brief playful squash-and-stretch and expressive anticipation, while cooldowns, hit timing and gameplay authority remain unchanged.
 
 See the [battle HUD coordinate contract](hud-layout.md).
 
