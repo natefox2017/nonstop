@@ -40,6 +40,7 @@ The deterministic core tests cover Floor shape, stable target ties, one-time kil
 - [Portrait HUD](docs/product/hud-layout.md) and [visual direction](docs/product/visual-direction.md)
 - [Approved technology stack](docs/technical/stack-decision.md), [architecture](docs/technical/architecture.md) and [data contracts](docs/technical/data-contracts.md)
 - [Save and offline contract](docs/technical/persistence-and-offline.md) and [asset pipeline](docs/technical/asset-pipeline.md)
+- [Gate 2 candidate specification](docs/product/gate-2-candidate-spec.md) — review-only; unresolved behavior and page design are not approved.
 - [Development rules](AGENTS.md) and [contributing](CONTRIBUTING.md)
 
 The repository has no active Linear board or GitHub issue backlog. Use the current repository requirements and scoped work; do not import tasks or artifacts from another project.

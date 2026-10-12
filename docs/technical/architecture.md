@@ -28,7 +28,7 @@ The graybox runs a main-thread 30 Hz fixed-step loop with `requestAnimationFrame
 | Location | Responsibility | Must not own |
 | --- | --- | --- |
 | `src/game/core.ts`, `floor.ts`, `types.ts`, `tuning.ts` | Current deterministic Floor loop, authored template, state/command types and provisional pacing | DOM, Three.js mesh or storage API |
-| `src/game/store.ts`, `src/game/save.ts` | Current external-store adapter and IndexedDB version-1 whole-state snapshots | Combat and reward rules |
+| `src/game/store.ts`, `src/game/save.ts` | Current external-store adapter and IndexedDB version-2 whole-state snapshots with v1 migration | Combat and reward rules |
 | `src/game/core.test.ts` | Current deterministic core tests | Live player state |
 | `src/game/catalogs/` | Versioned skills, items, chests, tuning and stable IDs | Event listeners and UI translations |
 | `src/game/maps/` | Future additional authored templates, route/arena geometry and path projection | Generated random terrain or artwork exports |
@@ -44,7 +44,7 @@ No manager, event bus, service container, multiplayer layer or backend should be
 - 4 ordered encounters × 5 registered goal enemies = 20 valid kills per Floor.
 - Every third Floor: Boss Ready at 20/20; BATTLE normally required; farming remains non-goal.
 - Only `GameCore` grants objective credit on one registered death event. Reject duplicate callbacks/replayed damage.
-- The graybox uses Whirl, Leap and Void as three fixed representative skills; the six-skill choice catalog and forms are not implemented yet.
+- The graybox HUD uses Whirl, Leap and Void as three fixed representative skills. GameCore implements the six-skill family loadout and per-skill cooldown switching; the complete skill/effect/form catalog and Skills page are not implemented yet.
 - Six skills in three two-choice families; loadout changes preserve current cooldowns; Boss start refreshes them.
 - Gear has exactly Weapon, Armor and Cloak slots; reward and next checkpoint commit together.
 - Death and Ascension change the run epoch, invalidating pending callbacks; offline never resolves a Boss.

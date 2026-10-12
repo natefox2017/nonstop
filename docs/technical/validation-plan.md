@@ -10,7 +10,7 @@ The framework decision and first graybox contracts are complete. Portrait resolu
 
 ## Gate 1 — Runnable primitive graybox
 
-The current runnable application is this slice: one continuous floating-landmass test Floor with an authored route, four arenas × five registered goal enemies, deterministic auto-navigation/targeting/basic attacks, three representative active skills, ordinary Floor transition, explicit every-third-Floor BATTLE, pause, and a version-1 IndexedDB snapshot. It uses original procedural placeholder meshes; no joystick or manual attack button.
+The current runnable application is this slice: one continuous floating-landmass test Floor with an authored route, four arenas × five registered goal enemies, deterministic auto-navigation/targeting/basic attacks, three representative active skills, ordinary Floor transition, explicit every-third-Floor BATTLE, pause, and a version-2 IndexedDB snapshot with version-1 migration. It uses original procedural placeholder meshes; no joystick or manual attack button.
 
 **Acceptance:** `npm test` covers template shape, stable target ordering, registered/one-time death credit, 20-kill clear/advance, Boss Ready/BATTLE and cooldown rejection. Browser runs and screenshot captures verify actual portrait rendering, Boss start, pause/resume and reload restore at 390×844, 540×960 and 720×1280. Do not mistake the graybox for art approval or production UI approval.
 
