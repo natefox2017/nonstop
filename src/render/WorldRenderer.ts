@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { FLOOR_ONE } from "../game/floor";
 import { gameStore } from "../game/store";
 import type { GameEvent, GameState, Point2 } from "../game/types";
+import { disposeObjectResources } from "./dispose";
 
 const material = (color: string, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
 const ACTOR_ASSET_ROOT = "/assets/cc0-test-set/";
@@ -54,12 +55,7 @@ function fitActor(root: THREE.Group, targetHeight: number): number {
 }
 
 function releaseObject(root: THREE.Object3D): void {
-  root.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return;
-    node.geometry.dispose();
-    const materials = Array.isArray(node.material) ? node.material : [node.material];
-    materials.forEach((entry) => entry.dispose());
-  });
+  disposeObjectResources(root);
 }
 
 function makeHero(): THREE.Group {
@@ -369,13 +365,7 @@ export function mountWorld(container: HTMLElement): () => void {
     for (const [id, mesh] of enemyMeshes) {
       if (!visibleEnemyIds.has(id)) {
         scene.remove(mesh);
-        mesh.traverse((node) => {
-          if (node instanceof THREE.Mesh) {
-            node.geometry.dispose();
-            if (Array.isArray(node.material)) node.material.forEach((entry) => entry.dispose());
-            else node.material.dispose();
-          }
-        });
+        disposeObjectResources(mesh);
         enemyMeshes.delete(id);
       }
     }
@@ -449,23 +439,12 @@ export function mountWorld(container: HTMLElement): () => void {
     observer.disconnect();
     renderer.setAnimationLoop(null);
     modelMixers.forEach((mixer) => mixer.stopAllAction());
-    sourceScenes.forEach(releaseObject);
+    const disposedTextures = new Set<THREE.Texture>();
+    sourceScenes.forEach((source) => disposeObjectResources(source, disposedTextures));
     for (const mesh of [hero, ...enemyMeshes.values()]) {
-      mesh.traverse((node) => {
-        if (node instanceof THREE.Mesh) {
-          node.geometry.dispose();
-          if (Array.isArray(node.material)) node.material.forEach((entry) => entry.dispose());
-          else node.material.dispose();
-        }
-      });
+      disposeObjectResources(mesh, disposedTextures);
     }
-    scene.traverse((node) => {
-      if (node instanceof THREE.Mesh) {
-        node.geometry.dispose();
-        if (Array.isArray(node.material)) node.material.forEach((entry) => entry.dispose());
-        else node.material.dispose();
-      }
-    });
+    disposeObjectResources(scene, disposedTextures);
     renderer.dispose();
     canvas.remove();
   };
