@@ -1,6 +1,7 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { gameStore } from "../game/store";
 import { createAudioFeedback } from "../audio/feedback";
+import { readAudioMuted, writeAudioMuted } from "../audio/preferences";
 import type { SkillId } from "../game/types";
 import "./styles.css";
 
@@ -22,6 +23,9 @@ export function App() {
   const state = useSyncExternalStore(gameStore.subscribe, gameStore.getSnapshot, gameStore.getSnapshot);
   const saveStatus = useSyncExternalStore(gameStore.subscribeStatus, gameStore.getStatus, gameStore.getStatus);
   const worldRoot = useRef<HTMLDivElement>(null);
+  const audioFeedback = useRef<ReturnType<typeof createAudioFeedback> | null>(null);
+  const [audioMuted, setAudioMuted] = useState(readAudioMuted);
+  const [audioPreferenceMessage, setAudioPreferenceMessage] = useState("");
 
   useEffect(() => {
     const root = worldRoot.current;
@@ -39,25 +43,43 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const audio = createAudioFeedback();
+    const audio = createAudioFeedback(audioMuted);
+    audioFeedback.current = audio;
     const unlock = () => audio.unlock();
-    const resumeWhenVisible = () => {
-      if (document.visibilityState === "visible") audio.resume();
-    };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-    document.addEventListener("visibilitychange", resumeWhenVisible);
-    window.addEventListener("pageshow", resumeWhenVisible);
+    const updatePageVisibility = () => audio.setPageVisible(document.visibilityState === "visible");
+    const onPageHide = () => audio.setPageVisible(false);
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    document.addEventListener("visibilitychange", updatePageVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", updatePageVisibility);
+    audio.setPageVisible(document.visibilityState === "visible");
     const unsubscribe = gameStore.subscribeEvents(audio.play);
     return () => {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
-      document.removeEventListener("visibilitychange", resumeWhenVisible);
-      window.removeEventListener("pageshow", resumeWhenVisible);
+      document.removeEventListener("visibilitychange", updatePageVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", updatePageVisibility);
       unsubscribe();
       audio.dispose();
+      audioFeedback.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    audioFeedback.current?.setMuted(audioMuted);
+    audioFeedback.current?.setPaused(state.paused);
+  }, [audioMuted, state.paused]);
+
+  const toggleAudio = () => {
+    const nextMuted = !audioMuted;
+    setAudioMuted(nextMuted);
+    const saved = writeAudioMuted(nextMuted);
+    setAudioPreferenceMessage(saved ? "" : "Audio changed for this session, but the preference could not be saved.");
+    audioFeedback.current?.setMuted(nextMuted);
+    if (!nextMuted) audioFeedback.current?.unlock();
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -89,14 +111,29 @@ export function App() {
           <div className="objective-label">GOAL ENEMIES</div>
           <div className="objective-count"><strong>{String(state.goalKills).padStart(2, "0")}</strong><span>/ 20</span></div>
         </div>
-        <button
-          className={`pause-button ${state.paused ? "is-paused" : ""}`}
-          type="button"
-          aria-label={state.paused ? "Resume battle" : "Pause battle"}
-          onClick={() => gameStore.dispatch({ type: "toggle-pause" })}
-        >
-          <span aria-hidden="true">{state.paused ? "▶" : "Ⅱ"}</span>
-        </button>
+        <div className="header-actions">
+          <button
+            className={`audio-button ${audioMuted ? "is-muted" : ""}`}
+            type="button"
+            aria-label="Audio feedback"
+            aria-pressed={audioMuted}
+            title={audioMuted ? "Audio muted" : "Audio on"}
+            onClick={toggleAudio}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 10h3l4-3v10l-4-3H4z" />
+              {audioMuted ? <path d="m15 9 5 6m0-6-5 6" /> : <><path d="M15 9a4 4 0 0 1 0 6" /><path d="M17.5 6.5a7.5 7.5 0 0 1 0 11" /></>}
+            </svg>
+          </button>
+          <button
+            className={`pause-button ${state.paused ? "is-paused" : ""}`}
+            type="button"
+            aria-label={state.paused ? "Resume battle" : "Pause battle"}
+            onClick={() => gameStore.dispatch({ type: "toggle-pause" })}
+          >
+            <span aria-hidden="true">{state.paused ? "▶" : "Ⅱ"}</span>
+          </button>
+        </div>
       </header>
 
       <section className="battle-scene" aria-label="Battlefield">
@@ -180,7 +217,9 @@ export function App() {
           })}
         </div>
         <div className="footer-note">
-          <span>{isBoss ? (state.phase === "boss-ready" ? "A choice awaits" : "Hold your ground") : "Your knight fights alone"}</span>
+          <span aria-live={audioPreferenceMessage ? "polite" : undefined} role={audioPreferenceMessage ? "status" : undefined}>
+            {audioPreferenceMessage || (isBoss ? (state.phase === "boss-ready" ? "A choice awaits" : "Hold your ground") : "Your knight fights alone")}
+          </span>
           <span className="save-state" aria-live="polite"><i />{saveStatus}</span>
         </div>
       </footer>

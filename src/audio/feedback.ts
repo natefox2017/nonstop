@@ -22,20 +22,70 @@ function toneFor(event: GameEvent): Tone | undefined {
 }
 
 /** Small original Web Audio feedback. It consumes only authoritative game events. */
-export function createAudioFeedback() {
+export function createAudioFeedback(initiallyMuted = false) {
   let context: AudioContext | undefined;
+  let muted = initiallyMuted;
+  let paused = false;
+  let pageVisible = true;
+  let resumePending = false;
+  let suspendPending = false;
+  const voices = new Set<OscillatorNode>();
+
+  function stopVoices(): void {
+    for (const oscillator of voices) {
+      try { oscillator.stop(); } catch { /* The voice may already have ended. */ }
+    }
+    voices.clear();
+  }
+
+  function suspend(): void {
+    stopVoices();
+    if (!context || context.state !== "running" || suspendPending) return;
+    suspendPending = true;
+    void context.suspend().catch(() => {}).finally(() => {
+      suspendPending = false;
+      if (!muted && !paused && pageVisible) resume();
+    });
+  }
 
   function unlock(): void {
+    if (muted || !pageVisible) return;
     if (!context) context = new AudioContext();
     resume();
   }
 
   function resume(): void {
-    if (context?.state === "suspended") void context.resume().catch(() => {});
+    if (muted || paused || !pageVisible || !context || context.state !== "suspended" || resumePending) return;
+    resumePending = true;
+    void context.resume().catch(() => {}).finally(() => {
+      resumePending = false;
+      if (muted || paused || !pageVisible) suspend();
+    });
+  }
+
+  function setMuted(value: boolean): void {
+    if (muted === value) return;
+    muted = value;
+    if (muted) suspend();
+    else resume();
+  }
+
+  function setPaused(value: boolean): void {
+    if (paused === value) return;
+    paused = value;
+    if (paused) suspend();
+    else resume();
+  }
+
+  function setPageVisible(value: boolean): void {
+    if (pageVisible === value) return;
+    pageVisible = value;
+    if (pageVisible) resume();
+    else suspend();
   }
 
   function play(events: readonly GameEvent[]): void {
-    if (!context || context.state !== "running") return;
+    if (muted || paused || !pageVisible || !context || context.state !== "running") return;
     const now = context.currentTime;
     for (const event of events) {
       const tone = toneFor(event);
@@ -50,15 +100,18 @@ export function createAudioFeedback() {
       gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.duration);
       oscillator.connect(gain);
       gain.connect(context.destination);
+      voices.add(oscillator);
+      oscillator.addEventListener("ended", () => voices.delete(oscillator), { once: true });
       oscillator.start(now);
       oscillator.stop(now + tone.duration + 0.01);
     }
   }
 
   function dispose(): void {
+    stopVoices();
     if (context && context.state !== "closed") void context.close();
     context = undefined;
   }
 
-  return { unlock, resume, play, dispose };
+  return { unlock, resume, setMuted, setPaused, setPageVisible, play, dispose };
 }
