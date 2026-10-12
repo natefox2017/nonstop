@@ -7,12 +7,15 @@ describe("Three.js resource disposal", () => {
     const texture = new THREE.Texture();
     const textureDispose = vi.spyOn(texture, "dispose");
     const sharedTextureSet = new Set<THREE.Texture>();
-    const root = new THREE.Group();
+    const source = new THREE.Group();
+    const clone = new THREE.Group();
     const first = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ map: texture }));
     const second = new THREE.Mesh(new THREE.SphereGeometry(), new THREE.MeshBasicMaterial({ map: texture }));
-    root.add(first, second);
+    source.add(first);
+    clone.add(second);
 
-    disposeObjectResources(root, sharedTextureSet);
+    disposeObjectResources(source, sharedTextureSet);
+    disposeObjectResources(clone, sharedTextureSet);
 
     expect(textureDispose).toHaveBeenCalledOnce();
   });

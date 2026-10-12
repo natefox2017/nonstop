@@ -54,10 +54,6 @@ function fitActor(root: THREE.Group, targetHeight: number): number {
   return ground;
 }
 
-function releaseObject(root: THREE.Object3D): void {
-  disposeObjectResources(root);
-}
-
 function makeHero(): THREE.Group {
   const hero = new THREE.Group();
   const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 24, 18), material("#d48a45"));
@@ -274,7 +270,8 @@ export function mountWorld(container: HTMLElement): () => void {
     ]);
     const loadedScenes = [knight.scene, barbarian.scene, general.scene, movement.scene, combat.scene];
     if (disposed) {
-      loadedScenes.forEach(releaseObject);
+      const disposedTextures = new Set<THREE.Texture>();
+      loadedScenes.forEach((root) => disposeObjectResources(root, disposedTextures));
       return;
     }
     sourceScenes.push(...loadedScenes);
