@@ -25,6 +25,8 @@ Do not substitute Godot, another full engine, Unity, a speculative backend or a 
 - Exactly Weapon, Armor and Cloak equipment; save reliable inventory/coin/reward progression. Ascension unlocks on **current-run** Floor 20, not lifetime highest Floor.
 - One authored continuous floating landmass per Floor template, not procedural maze generation. Responsive portrait-only game layout.
 
+Use the approved original Pokémon-inspired chibi 3D visual direction in [visual direction](docs/product/visual-direction.md): rounded expressive characters, simplified Three.js-friendly materials and animation rigs. Never copy Pokémon creatures, characters, logos or assets. Visual redesign does not change combat, progression, input or economy rules.
+
 See [core loop](docs/product/core-loop.md), [parity policy](docs/product/reference-parity-policy.md), [HUD](docs/product/hud-layout.md) and [technical contracts](docs/technical/data-contracts.md).
 
 ## Lightweight development workflow
