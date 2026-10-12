@@ -1,10 +1,10 @@
 # Browser Save, Offline and Recovery Contract
 
-The current runtime saves one complete version-1 `GameState` record in IndexedDB (`nevercrest-save` / `snapshots` / `current`). Writes use a single read-write transaction, run about once per second, and occur immediately on commands and phase changes. The storage adapter rejects malformed snapshots and blocks writes after an invalid saved record or failed transaction; it does not yet provide migration or last-good recovery. Keep audio/locale preferences separate from gameplay state. The broader target rules are in [core loop](../product/core-loop.md); implemented fields are in [data contracts](data-contracts.md).
+The current runtime saves one complete version-1 `GameState` in IndexedDB (`nevercrest-save` / `snapshots`). The `current` and `last-good` records are written in one read-write transaction, about once per second and immediately on commands and phase changes. A valid current snapshot wins; if it is missing or invalid and a valid same-schema `last-good` exists, load reports recovery and resumes from that snapshot. The invalid current record is copied to `quarantined-current` in the same transaction as the next save. A future schema is never replaced or recovered over, and a failed transaction rolls back both current and last-good writes. Keep audio/locale preferences separate from gameplay state. The broader target rules are in [core loop](../product/core-loop.md); implemented fields are in [data contracts](data-contracts.md).
 
 ## Atomic save contract
 
-The first-slice snapshot stores Floor/encounter/Boss Ready state, goal IDs, Hero/enemy simulation values, cooldowns, elapsed time and pause state; it never stores Three.js objects, particles or paths. The target progression snapshot adds run IDs/epochs, Coins, Tokens, Knight Level/XP, inventory, skill forms, permanent upgrades and consumables. Validate every ID and bounded number before restore. A future or corrupt schema must **not** be overwritten by an older app. Migration and last-good metadata are not implemented yet.
+The first-slice snapshot stores Floor/encounter/Boss Ready state, goal IDs, Hero/enemy simulation values, cooldowns, elapsed time and pause state; it never stores Three.js objects, particles or paths. The target progression snapshot adds run IDs/epochs, Coins, Tokens, Knight Level/XP, inventory, skill forms, permanent upgrades and consumables. The current adapter validates every implemented field before restore, keeps one prior valid snapshot, quarantines a damaged current record on its next successful replacement, and refuses future schema versions. Migrations and validation for future progression fields are still required.
 
 Boss rewards: generate the eligible random chest once, assign a stable reward checkpoint ID, update inventory and next-Floor checkpoint, then **commit the whole snapshot before playing the chest animation**. Relaunching or duplicate input must not grant another item. Death and Ascension also save their post-transition checkpoint before presentation delays. Old-epoch timers/callbacks have no authority after run replacement. Block destructive progression after an unresolved write error, with visible retry/export/recovery.
 
@@ -16,7 +16,7 @@ Offline may complete normal Floors and the minions of the next Boss Floor to sto
 
 ## Browser failure cases
 
-- Mid-save crash/reload: IndexedDB transaction publishes all fields or none; verify last-good recovery.
+- Mid-save crash/reload: IndexedDB transaction publishes current and last-good fields all at once or none; automated storage tests cover transaction rollback, recovery and damaged-record quarantine. Browser restart verification remains required as the application expands its saved progression domains.
 - Quota/private mode/storage denied: show a durable warning, offer explicit export and safe import, do not silently delete data.
 - Multiple tabs: use a tested revision/lease or allow one writer only. `BroadcastChannel` alone is not a transaction lock; reject stale writes.
 - Invalid imported JSON: reject malformed values, duplicate inventory IDs, impossible Floor/kills, unknown items, nonfinite stats, huge payloads and new schemas without mutating prior storage.

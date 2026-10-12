@@ -8,10 +8,10 @@ Nevercrest is a portrait browser game built with **Three.js, React and TypeScrip
 - Each Floor contains four ordered encounters with five registered goal enemies apiece. Only those 20 enemies count toward the objective.
 - Ordinary Floors clear and advance automatically. Every third Floor stops at **Boss Ready** until the player presses **BATTLE**. The Boss fights automatically after that command.
 - The HUD has exactly three active skills—Whirl, Leap and Void—with gameplay-owned cooldowns. Buttons and keys 1–3 use the same commands. Pause and Resume halt the simulation.
-- The complete current `GameState` is saved to IndexedDB, with a periodic save and saves on commands and phase changes. Reload restores the snapshot.
+- The complete current `GameState` is saved to IndexedDB, with periodic saves and saves on commands and phase changes. Writes atomically retain the previous valid snapshot for recovery; a future schema is preserved without downgrade.
 - A single hand-authored waypoint Floor definition and procedural primitive meshes form the current graybox. Combat values in [`tuning.ts`](src/game/tuning.ts) are provisional pacing values, not claims about reference balance.
 
-This is Gate 1 graybox acceptance, not production art or full feature parity. The remaining core-loop contract includes the six-skill choice catalog, equipment and chests, reliable save recovery/migrations, offline settlement and current-run Floor-20 Ascension. These are not present in this runtime yet. See [the product brief](docs/product/product-brief.md), [core loop](docs/product/core-loop.md) and [validation stages](docs/technical/validation-plan.md).
+This is Gate 1 graybox acceptance, not production art or full feature parity. The remaining core-loop contract includes the six-skill choice catalog, equipment and chests, save-schema migrations and expanded progression persistence, offline settlement and current-run Floor-20 Ascension. These are not present in this runtime yet. See [the product brief](docs/product/product-brief.md), [core loop](docs/product/core-loop.md) and [validation stages](docs/technical/validation-plan.md).
 
 ## Run locally
 

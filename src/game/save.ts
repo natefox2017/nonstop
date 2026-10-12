@@ -4,7 +4,10 @@ import { FLOOR_ONE } from "./floor";
 const DATABASE = "nevercrest-save";
 const VERSION = 1;
 const STORE = "snapshots";
-const KEY = "current";
+const CURRENT_KEY = "current";
+const LAST_GOOD_KEY = "last-good";
+const QUARANTINED_KEY = "quarantined-current";
+const CURRENT_SCHEMA_VERSION = 1;
 
 export type SaveLoadResult = {
   state: GameState | null;
@@ -68,6 +71,12 @@ function isGameState(value: unknown): value is GameState {
     && (state.phase !== "exploring" || (state.goalKills < 20 && state.enemies.every((enemy) => enemy.kind === "goal")));
 }
 
+function isFutureSchema(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const schemaVersion = (value as { schemaVersion?: unknown }).schemaVersion;
+  return typeof schemaVersion === "number" && schemaVersion > CURRENT_SCHEMA_VERSION;
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE, VERSION);
@@ -81,20 +90,49 @@ function openDatabase(): Promise<IDBDatabase> {
 
 export async function loadGameState(): Promise<SaveLoadResult> {
   if (typeof indexedDB === "undefined") return { state: null, status: "Browser storage is unavailable.", writable: false };
+  let database: IDBDatabase | undefined;
   try {
-    const database = await openDatabase();
-    const value = await new Promise<unknown>((resolve, reject) => {
-      const transaction = database.transaction(STORE, "readonly");
-      const request = transaction.objectStore(STORE).get(KEY);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error("Could not read game save."));
+    const openedDatabase = await openDatabase();
+    database = openedDatabase;
+    const values = await new Promise<{ current: unknown; lastGood: unknown }>((resolve, reject) => {
+      const transaction = openedDatabase.transaction(STORE, "readonly");
+      const store = transaction.objectStore(STORE);
+      let current: unknown;
+      let lastGood: unknown;
+      const currentRequest = store.get(CURRENT_KEY);
+      const lastGoodRequest = store.get(LAST_GOOD_KEY);
+      currentRequest.onsuccess = () => { current = currentRequest.result; };
+      lastGoodRequest.onsuccess = () => { lastGood = lastGoodRequest.result; };
+      currentRequest.onerror = () => reject(currentRequest.error ?? new Error("Could not read game save."));
+      lastGoodRequest.onerror = () => reject(lastGoodRequest.error ?? new Error("Could not read recovery save."));
+      transaction.oncomplete = () => resolve({ current, lastGood });
+      transaction.onerror = () => reject(transaction.error ?? new Error("Could not read game save."));
+      transaction.onabort = () => reject(transaction.error ?? new Error("Game save read was cancelled."));
     });
-    database.close();
-    if (value === undefined) return { state: null, status: "Autosave ready", writable: true };
-    if (!isGameState(value)) return { state: null, status: "Save could not be validated; preserved without overwriting.", writable: false };
-    return { state: value, status: "Progress restored", writable: true };
-  } catch {
+    openedDatabase.close();
+    database = undefined;
+    const { current, lastGood } = values;
+    if (isFutureSchema(current)) {
+      return { state: null, status: "Save uses a newer version; progress is preserved without overwriting.", writable: false };
+    }
+    if (current === undefined) {
+      if (isGameState(lastGood)) {
+        return { state: lastGood, status: "Recovered last good save; damaged progress is preserved.", writable: true };
+      }
+      return { state: null, status: "Autosave ready", writable: true };
+    }
+    if (isGameState(current)) return { state: current, status: "Progress restored", writable: true };
+    if (isGameState(lastGood)) {
+      return { state: lastGood, status: "Recovered last good save; damaged progress is preserved.", writable: true };
+    }
+    return { state: null, status: "Save could not be validated; preserved without overwriting.", writable: false };
+  } catch (error) {
+    if (error instanceof Error && error.name === "VersionError") {
+      return { state: null, status: "Save uses a newer version; progress is preserved without overwriting.", writable: false };
+    }
     return { state: null, status: "Could not open save storage; progress may not persist.", writable: false };
+  } finally {
+    database?.close();
   }
 }
 
@@ -104,10 +142,34 @@ export async function saveGameState(state: GameState): Promise<void> {
   try {
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE, "readwrite");
-      transaction.objectStore(STORE).put(state, KEY);
+      const store = transaction.objectStore(STORE);
+      let failure: Error | undefined;
+      const request = store.get(CURRENT_KEY);
+      request.onsuccess = () => {
+        try {
+          const current = request.result;
+          if (isFutureSchema(current)) {
+            failure = new Error("Refusing to overwrite a save from a newer version.");
+            transaction.abort();
+            return;
+          }
+          if (current !== undefined) {
+            if (isGameState(current)) store.put(current, LAST_GOOD_KEY);
+            else store.put(current, QUARANTINED_KEY);
+          }
+          store.put(state, CURRENT_KEY);
+        } catch (error) {
+          failure = error instanceof Error ? error : new Error("Could not stage game save.");
+          transaction.abort();
+        }
+      };
+      request.onerror = () => {
+        failure = request.error ?? new Error("Could not read game save before writing.");
+        transaction.abort();
+      };
       transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error("Could not save game progress."));
-      transaction.onabort = () => reject(transaction.error ?? new Error("Game save was cancelled."));
+      transaction.onerror = () => reject(failure ?? transaction.error ?? new Error("Could not save game progress."));
+      transaction.onabort = () => reject(failure ?? transaction.error ?? new Error("Game save was cancelled."));
     });
   } finally {
     database.close();
