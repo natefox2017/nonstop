@@ -27,7 +27,11 @@ export function createAudioFeedback() {
 
   function unlock(): void {
     if (!context) context = new AudioContext();
-    if (context.state === "suspended") void context.resume();
+    resume();
+  }
+
+  function resume(): void {
+    if (context?.state === "suspended") void context.resume().catch(() => {});
   }
 
   function play(events: readonly GameEvent[]): void {
@@ -56,5 +60,5 @@ export function createAudioFeedback() {
     context = undefined;
   }
 
-  return { unlock, play, dispose };
+  return { unlock, resume, play, dispose };
 }

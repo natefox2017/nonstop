@@ -41,12 +41,19 @@ export function App() {
   useEffect(() => {
     const audio = createAudioFeedback();
     const unlock = () => audio.unlock();
+    const resumeWhenVisible = () => {
+      if (document.visibilityState === "visible") audio.resume();
+    };
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
+    document.addEventListener("visibilitychange", resumeWhenVisible);
+    window.addEventListener("pageshow", resumeWhenVisible);
     const unsubscribe = gameStore.subscribeEvents(audio.play);
     return () => {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
+      document.removeEventListener("visibilitychange", resumeWhenVisible);
+      window.removeEventListener("pageshow", resumeWhenVisible);
       unsubscribe();
       audio.dispose();
     };
