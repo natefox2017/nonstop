@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseTarget, createInitialGameState, dispatchCommand, stepGame } from "./core";
+import { chooseTarget, createInitialGameState, dispatchCommand, isAscensionEligible, stepGame } from "./core";
 import { FLOOR_ONE, validateFloorTemplate } from "./floor";
 import type { Enemy, GameState } from "./types";
 
@@ -34,6 +34,14 @@ describe("authored Floor and deterministic combat", () => {
   it("uses distance first and stable ID ordering to break target ties", () => {
     const target = chooseTarget({ x: 0, z: 0 }, [enemy("goal-b", 1, 0), enemy("goal-a", -1, 0)]);
     expect(target?.id).toBe("goal-a");
+  });
+
+  it("gates Ascension on the current-run Floor 20 without requiring its clear", () => {
+    expect(isAscensionEligible({ floorNumber: 19 })).toBe(false);
+    expect(isAscensionEligible({ floorNumber: 20 })).toBe(true);
+    expect(isAscensionEligible({ floorNumber: 1000 })).toBe(true);
+    const lifetimeHigh = { ...createInitialGameState(), highestFloor: 20 };
+    expect(isAscensionEligible(lifetimeHigh)).toBe(false);
   });
 
   it("counts one registered goal death once", () => {

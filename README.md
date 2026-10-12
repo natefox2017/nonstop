@@ -31,7 +31,7 @@ npm test
 npm run build
 ```
 
-The deterministic core tests cover Floor shape, stable target ties, one-time kill credit, 20-goal Floor clear/advance, every-third-Floor Boss Ready and explicit Boss start, skill-slot switching and cooldown persistence, same-Floor death retry, and Boss loss/retry. Browser screenshots and smoke captures live under [`output/playwright/`](output/playwright/).
+The deterministic core tests cover Floor shape, stable target ties, one-time kill credit, 20-goal Floor clear/advance, every-third-Floor Boss Ready and explicit Boss start, skill-slot switching and cooldown persistence, current-run Floor-20 Ascension eligibility, same-Floor death retry, and Boss loss/retry. Browser screenshots and smoke captures live under [`output/playwright/`](output/playwright/).
 
 ## Project contracts
 
