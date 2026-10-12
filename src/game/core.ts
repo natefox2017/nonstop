@@ -270,7 +270,13 @@ export function stepGame(state: GameState, deltaSeconds = STEP): StepResult {
       return { state: next, events };
     } else {
       const reset = createInitialGameState();
-      Object.assign(next, reset, { floorNumber: lostFloor, highestFloor: next.highestFloor, elapsedSeconds: next.elapsedSeconds });
+      const skillLoadout = next.skillLoadout;
+      Object.assign(next, reset, {
+        floorNumber: lostFloor,
+        highestFloor: next.highestFloor,
+        elapsedSeconds: next.elapsedSeconds,
+        skillLoadout,
+      });
       events.push({ type: "hero-died", floorNumber: lostFloor });
       return { state: next, events };
     }

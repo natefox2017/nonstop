@@ -96,6 +96,7 @@ describe("authored Floor and deterministic combat", () => {
       highestFloor: 8,
       encounterIndex: 2,
       goalKills: 10,
+      skillLoadout: { slot1: "slam", slot2: "slash", slot3: "clone" },
       defeatedGoalIds: FLOOR_ONE.encounters.slice(0, 2).flatMap((item) => item.goals.map((enemy) => enemy.id)),
       hero: { ...initial.hero, position: { ...goal.position }, health: 1, attackTimer: 10 },
       enemies: [{
@@ -116,6 +117,7 @@ describe("authored Floor and deterministic combat", () => {
     expect(result.state.defeatedGoalIds).toEqual([]);
     expect(result.state.enemies).toEqual([]);
     expect(result.state.hero.health).toBe(result.state.hero.maxHealth);
+    expect(result.state.skillLoadout).toEqual({ slot1: "slam", slot2: "slash", slot3: "clone" });
   });
 
   it("returns a lost Boss attempt to Boss Ready at 20/20 and allows an explicit retry", () => {
