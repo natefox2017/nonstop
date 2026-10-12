@@ -61,6 +61,11 @@ export function createInitialGameState(): GameState {
   };
 }
 
+/** Ascension eligibility follows current-run progress, not the lifetime high Floor. */
+export function isAscensionEligible(state: Pick<GameState, "floorNumber">): boolean {
+  return state.floorNumber >= 20;
+}
+
 /** Reachable distance is straight-line on this unobstructed authored prototype route. */
 export function chooseTarget(position: Point2, enemies: readonly Enemy[]): Enemy | undefined {
   return enemies
