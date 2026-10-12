@@ -44,7 +44,7 @@ See [visual-direction.md](visual-direction.md) and [hud-layout.md](hud-layout.md
 
 The first meaningful build is one complete playable Floor on a representative authored floating-landmass Floor. It must prove automatic travel/targeting/basic attacks, readable enemy hit/death feedback, four ordered encounters and exactly 20 goal kills, three representative active skills, responsive battle UI, Floor-clear/save-resume behavior, and stable performance in representative portrait browsers. Device and GPU constraints require measured evidence once a runtime exists.
 
-Final hero art, a large equipment catalog and multiple biomes do not block this test. The repo currently contains only specifications; this describes future acceptance, not an already playable build. See the [validation plan](../technical/validation-plan.md) and the linked Linear/GitHub acceptance evidence.
+Final hero art, a large equipment catalog and multiple biomes do not block this test. The current Gate 1 build is a runnable primitive graybox with deterministic automatic combat, four encounters, three active skills, responsive battle HUD, Floor transitions, an explicit Boss Ready/BATTLE gate and IndexedDB reload saves. It has not yet met the broader Gate 2 requirements for equipment, loot, offline settlement or Ascension. See the [validation plan](../technical/validation-plan.md).
 
 ## Scope discipline
 

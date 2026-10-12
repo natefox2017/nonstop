@@ -1,18 +1,18 @@
 # Development Sequence and Acceptance Gates
 
-The stack is **approved: Three.js + React + TypeScript, with Blender used only when needed**. The new repository currently contains specifications only. No game, CI, art or application test has been built. Real completion and test evidence belong to the relevant development work, not this enduring specification.
+The stack is **approved and installed: Three.js + React + TypeScript, with Blender used only when needed**. The current runtime is the primitive Gate 1 graybox described in the [README](../../README.md). Test results belong to executed checks; this plan describes the durable acceptance gates.
 
 ## Gate 0 — Freeze the first executable slice
 
-The framework decision is complete. Define the initial browser support matrix, portrait test resolutions, game camera framing, one authored Floor route/arena plan, input commands and exact typed game/save contracts. Review the first UI flow and representative art direction. Choose and pin tool versions when the first scaffold is created.
+The framework decision and first graybox contracts are complete. Portrait resolutions, a Floor route/arena template, input commands, typed GameState and save snapshot are in the current implementation. Minimum browser/GPU performance and production page-flow approval remain open.
 
-**Evidence:** documented interfaces, owner-approved page/flow design and a coherent contract; no claim of gameplay implementation.
+**Evidence:** implemented interfaces in `src/game/`, the responsive graybox HUD, pinned packages and actual browser smoke evidence. The production UI design review remains a separate gate for expanded flows.
 
 ## Gate 1 — Runnable primitive graybox
 
-Create the smallest complete Vite/TypeScript + Three.js scene with a React HUD. Programmatically draw one continuous floating-landmass test Floor with an authored route, four arenas × five goal enemies and a Boss space. Implement auto-navigation, auto-targeting/basic attacks, registered 20-goal counting, ordinary Floor transition and explicit every-third-Floor BATTLE. Show exactly three skill placeholders; no joystick.
+The current runnable application is this slice: one continuous floating-landmass test Floor with an authored route, four arenas × five registered goal enemies, deterministic auto-navigation/targeting/basic attacks, three representative active skills, ordinary Floor transition, explicit every-third-Floor BATTLE, pause, and a version-1 IndexedDB snapshot. It uses original procedural placeholder meshes; no joystick or manual attack button.
 
-**Acceptance:** pure unit tests for target/reachability, stable tie ordering, single-death credit, 20 kills and Boss Ready; real browser render and usable HUD at several portrait sizes. Do not mistake the graybox for art approval.
+**Acceptance:** `npm test` covers template shape, stable target ordering, registered/one-time death credit, 20-kill clear/advance, Boss Ready/BATTLE and cooldown rejection. Browser runs and screenshot captures verify actual portrait rendering, Boss start, pause/resume and reload restore at 390×844, 540×960 and 720×1280. Do not mistake the graybox for art approval or production UI approval.
 
 ## Gate 2 — Complete reliable gameplay loop
 
@@ -40,4 +40,4 @@ Calibrate public 2016 observable behavior and bounded Floors 1–1000, mark hidd
 
 ## Evidence standard
 
-Documentation and mockups are not implemented code; a green static check is not gameplay acceptance. Once source exists, maintain scoped automated scripts for core rules, data validation, browser behavior and WebGL smoke tests. Run only appropriate tests for each change, recording exact results. No runtime suite can run from this initial documents-only repository.
+Documentation and mockups are not implemented code; a green static check is not gameplay acceptance. Maintain scoped automated scripts for core rules and data validation, and browser evidence for rendered gameplay. Run only appropriate tests for each change, recording exact results. The current test command is `npm test`; the production build command is `npm run build`.

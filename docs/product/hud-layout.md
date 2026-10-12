@@ -1,6 +1,6 @@
 # Portrait Battle UI and Input Contract
 
-This is a **future runtime contract**, not evidence of an existing HUD. The owner approved portrait-only gameplay and a Three.js + React + TypeScript implementation, with responsive DOM layout over the Three.js canvas. No final page or flow should be implemented without its corresponding reviewed design board.
+The current runtime has a **graybox battle HUD** over the Three.js canvas. This document remains the production HUD contract: portrait-only gameplay with responsive React DOM controls. No production page or additional flow should be implemented without its corresponding reviewed design board.
 
 ## Orientation, coordinate system and regions
 

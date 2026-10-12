@@ -1,6 +1,6 @@
-# Proposed Data and Interface Contracts
+# Game Data and Interface Contracts
 
-The following defines **planned interfaces** for the approved TypeScript/Three.js project, not existing files or ready-to-import code. Freeze exact names and serialization versions during the first implementation slice; later public state changes require documented compatibility and tests.
+The Gate 1 interfaces are implemented in `src/game/types.ts`, `floor.ts`, `core.ts` and `save.ts`. This document records both that initial slice and the broader target contract; systems named only in later sections remain unimplemented until an authorized slice adds them. Preserve snapshot compatibility when changing the current schema.
 
 ## Stable IDs and reference rules
 
@@ -10,19 +10,13 @@ The reference ruleset is a versioned independent configuration (`ruleset_id = la
 
 ## Floor template
 
-Author a hand-designed single contiguous floating landmass per template. Proposed declarative shape:
+Author a hand-designed single contiguous floating landmass per template. The first graybox uses this declarative shape:
 
 ```text
-FloorTemplate {
-  id, version, coordinateSystem: "meters-y-up",
-  playableBounds / walkablePolygons,
-  authoredRoute: ordered waypoint ids + 3D positions,
-  encounters: exactly four ordered Encounter { id, arenaBounds,
-      entryAnchor, exitAnchor, spawnAnchors: exactly five goal entries },
-  bossArena: { spawnAnchor, entryAnchor, cameraZone },
-  decorSockets, navDataVersion, visualAssetIds
-}
+FloorTemplate { id, route: Point2[], encounters: 4 × { id, center, goals: 5 × { id, position, maxHealth } }, bossArena: Point2 }
 ```
+
+The current template is `floating-meadow-v1` in `src/game/floor.ts`; `validateFloorTemplate` checks encounter count, goal count, unique IDs, finite coordinates and route length. It does not yet validate polygonal walkability, obstacle reachability or a catalog of Floor-template mappings.
 
 Gameplay walkability, route/arena boundaries and spawn coordinates are authoritative in the authored Floor definition; a Blender/GLB export must not silently change them. Floor number selects an approved authored template via a deterministic versioned mapping; no runtime maze or selectable-island chain. Gameplay collision and level cosmetics can change independently only if the authored navigation contract remains valid.
 
@@ -30,9 +24,9 @@ Validate coordinates as finite bounded numbers, unique IDs, reachable encounter 
 
 ## Commands and events
 
-Input is a typed finite command union, e.g. `CastSkill(slot=1..3)`, `ChooseSkill(family,rune)`, `EquipItem(instanceId)`, `UpgradeEquipment(slot)`, `SellItem(instanceId)`, `StartBoss`, `ConfirmAscend`, `Pause`, `Resume`. Include a monotonic command sequence/epoch for duplicate and stale event defense. Reject invalid slot/state/insufficient currency/unknown item with a structured result that **does not mutate state**.
+Current input is the typed `GameCommand` union: `cast-skill`, `start-boss`, and `toggle-pause`. The broader planned command set includes skill selection, equipment, upgrades, selling and Ascension; sequence/epoch defense is not implemented yet.
 
-Core produces read-only snapshots and presentation events, e.g. `DamageApplied`, `ActorDied`, `ObjectiveChanged`, `BossReady`, `ChestCommitted`, `FloorAdvanced`, `RunAscended`. React and Three subscribe; they do not own side effects that modify rewards. A display event may repeat safely (animation replay) while objective and inventory state must not.
+Core produces `GameState` snapshots and typed `GameEvent`s for enemy defeat, Floor clear, Boss Ready, Boss start and Hero death. React and Three consume snapshots; they do not own damage or objective credit. Reward and inventory events remain future implementation.
 
 Targeting uses reachable-nav distance and stable-ID tie ordering. Actor death is credited at most once using instance IDs registered in that encounter. Farm/summon/decoration instances have no goal-credit permission.
 
@@ -44,7 +38,7 @@ Exactly `weapon`, `armor`, `cloak` are gameplay slots. Each item instance stores
 
 ## Durable run state and migration
 
-Proposed snapshot domains: `schemaVersion`, `runId`, `epoch`, `rulesetId`, `floorNumber`, `highestFloor`, `encounterBoundary`, `goalKills`, `bossState`, `coins`, `bankedTokens`, `pendingTokens`, `knightLevel`, `xp`, `inventory`, `equippedItemInstanceIds`, `skillLoadout`, `permanentUpgradeLevels`, `consumableInventory`, `bossTicketRemaining`, `checkpointId`, `lastCommittedTimestamp`.
+The current version-1 `GameState` snapshot contains `schemaVersion`, Floor and phase, current/lifetime-high Floor numbers, encounter index, goal kills/defeated IDs, Hero and enemy simulation values, skill cooldowns, elapsed play time, Floor-clear timer and pause state. It is stored as one IndexedDB record. The broader target snapshot adds the durable progression domains below once implemented: `runId`, `epoch`, `rulesetId`, Coins/Tokens, Knight Level/XP, inventory/equipped item IDs, skill forms, permanent upgrades and consumables.
 
 This is a **domain contract**, not a frozen JSON field implementation. Distinguish current-run Floor from lifetime highestFloor. Never serialize Three.js objects, actor pointers, path cache, animation state, running wall-clock timers or GPU resources. Explicitly decide whether skill cooldowns are restored or reconstructed at encounter boundaries; do not infer from old save formats.
 

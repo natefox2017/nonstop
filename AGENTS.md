@@ -2,7 +2,7 @@
 
 ## Repository and product authority
 
-This repository is a clean **documentation-only** starting point for a Three.js game. It has no runnable game, tests, models or build system until they are actually committed. The following are separate authorities:
+This repository currently contains a runnable **Gate 1 graybox** for a Three.js game: the deterministic TypeScript core, one authored Floor, a procedural Three.js scene, a React portrait HUD, IndexedDB snapshots and core-rule tests. It has no production models or broader progression systems yet. The following are separate authorities:
 1. The owner's latest explicit instructions.
 2. Approved product behavior in `docs/product/` and the approved technology decision in `docs/technical/stack-decision.md`.
 3. Current repository code and measured tests once implementation exists.
@@ -31,7 +31,7 @@ See [core loop](docs/product/core-loop.md), [parity policy](docs/product/referen
 
 ## Standards and task authority
 
-Follow the [central engineering standard](https://github.com/natefox2017/agents-md/blob/main/AGENTS.md) selectively with the [Three.js](https://github.com/natefox2017/agents-md/blob/main/profiles/THREEJS.md), [Web game](https://github.com/natefox2017/agents-md/blob/main/profiles/WEB_GAMES.md) and [3D game](https://github.com/natefox2017/agents-md/blob/main/profiles/GAME_3D.md) profiles. The [asset delivery contract](https://github.com/natefox2017/agents-md/blob/main/profiles/ASSET_DELIVERY.md) applies only to actual asset tasks. This documentation-only repository has no installed framework packages, executable game, test runner or active Linear Board; do not claim otherwise. Use the [stack decision](docs/technical/stack-decision.md) for the selected Vite, Three.js, React, Vitest, Playwright, waypoint and persistence approach; Phaser and React Three Fiber are not selected. Future code and commands must be verified from actual files before use.
+Follow the [central engineering standard](https://github.com/natefox2017/agents-md/blob/main/AGENTS.md) selectively with the [Three.js](https://github.com/natefox2017/agents-md/blob/main/profiles/THREEJS.md), [Web game](https://github.com/natefox2017/agents-md/blob/main/profiles/WEB_GAMES.md) and [3D game](https://github.com/natefox2017/agents-md/blob/main/profiles/GAME_3D.md) profiles. The [asset delivery contract](https://github.com/natefox2017/agents-md/blob/main/profiles/ASSET_DELIVERY.md) applies only to actual asset tasks. The current package versions, executable game, test commands and runtime scope are in the repository files; there is no active Linear Board. Use the [stack decision](docs/technical/stack-decision.md) for the selected Vite, Three.js, React, Vitest, Playwright, waypoint and persistence approach; Phaser and React Three Fiber are not selected. Verify paths and commands from actual files before use.
 
 ## Lightweight development workflow
 
@@ -55,10 +55,10 @@ Optimize the project for independent, zero-context AI contributors without intro
 
 ## Implementation and validation
 
-Build a minimal **one-Floor graybox** first: basic Three.js view, authored navigation/encounters, deterministic automated combat and three-slot React HUD. Accept real models only after route, scale, camera and action timings are validated. Prefer compliant reusable models/animations, GLB/glTF exports and small integrated art batches. UI implementation requires an approved page/flow design.
+The current implementation is the minimal **one-Floor graybox**: Three.js view, authored encounters, deterministic automated combat and a three-slot React HUD. Extend it only within current requirements. Accept real models only after route, scale, camera and action timings are validated. Prefer compliant reusable models/animations, GLB/glTF exports and small integrated art batches. Production page/flow work beyond the graybox HUD requires an approved design.
 
 Keep authoritative gameplay in pure testable TypeScript state/rules. Renderer, sound, DOM/React, visual effect lifecycles and animation tracks are consumers of events, not independent gameplay authorities. Browser persistence must validate versions/IDs, commit complete snapshots atomically and avoid duplicate offline/Boss rewards.
 
-For new code, run relevant unit and browser smoke tests actually available in the repository. Test objective/Boss/death/skill/save/offline rules independently from WebGL, then verify rendered portrait layout, focus/touch and performance in actual browsers. Do not report unexecuted tests as successful. There are **no** runtime or CI tests in this initial documentation-only commit.
+For new code, run relevant unit and browser smoke tests actually available in the repository. Test objective/Boss/death/skill/save/offline rules independently from WebGL, then verify rendered portrait layout, focus/touch and performance in actual browsers. Do not report unexecuted tests as successful. Current core tests use `npm test`; the TypeScript/production build uses `npm run build`.
 
 Report concrete file changes, test results, commits/PR status if applicable and unresolved blockers. See [validation stages](docs/technical/validation-plan.md).

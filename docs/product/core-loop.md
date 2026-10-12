@@ -1,6 +1,6 @@
 # Core Loop and Gameplay State Contract
 
-Nevercrest targets publicly observable mechanics of the original 2016 Nonstop Knight release across Floors 1–1000, **without copying proprietary content**. This is a **target contract**, not a report of implemented code. Consult the [launch-era reference](reference-gameplay-baseline.md) for confidence boundaries and the [parity policy](reference-parity-policy.md) for unrecovered constants.
+Nevercrest targets publicly observable mechanics of the original 2016 Nonstop Knight release across Floors 1–1000, **without copying proprietary content**. The current Gate 1 runtime implements the automatic Floor loop, three representative skills, explicit Boss entry and reloadable snapshots; this document's other progression systems remain target requirements. Consult the [launch-era reference](reference-gameplay-baseline.md) for confidence boundaries and the [parity policy](reference-parity-policy.md) for unrecovered constants.
 
 ## Autonomous action and player input
 

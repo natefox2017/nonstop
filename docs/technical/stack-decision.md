@@ -4,7 +4,7 @@
 
 **Approved by the project owner on 2026-10-12.** The new Nevercrest implementation uses **Three.js + React + TypeScript**. **Blender is optional** for authored 3D modeling, rigging, retargeting and export; it is not required for procedural geometry, gameplay code, UI or runtime rendering.
 
-This decision is final for the project's initial browser implementation unless the owner explicitly requests a change. This repository is currently **documentation only**: technology approval is not a claim that packages have been installed or the game implemented.
+This decision is final for the project's initial browser implementation unless the owner explicitly requests a change. The approved stack is installed and the repository contains a runnable Gate 1 graybox; actual package versions and commands are pinned in `package.json` and the lockfile.
 
 ## Component ownership
 
@@ -18,18 +18,18 @@ This decision is final for the project's initial browser implementation unless t
 
 The browser is the initial target; Android/iOS packaging and cloud services are not part of this foundation. The gameplay view is portrait-only. This is a **Web game stack**, not a claim that Three.js supplies an integrated game-engine editor, AI navigation, physical simulation or persistence on its own.
 
-## Selected implementation tooling (not yet installed)
+## Selected implementation tooling
 
-- **Vite** as the build/dev tool with strict TypeScript; pin mutually compatible stable versions in the first implementation lockfile.
-- **Vitest** as the unit/integration test runner for deterministic game rules and data validation.
-- **Playwright** as the browser test runner for startup, portrait resize, modal interactions, keyboard/focus and WebGL smoke checks.
-- **IndexedDB** for versioned atomic local game saves, accessed through a typed storage interface with complete transactional snapshots.
+- **Vite** is the build/dev tool with strict TypeScript. Actual version: `8.3.4`.
+- **Vitest** runs deterministic game-rule tests. Actual version: `5.0.3`.
+- **Playwright CLI** is used for live browser smoke checks and screenshot capture. It is not a committed test dependency.
+- **IndexedDB** stores complete version-1 `GameState` snapshots through a typed storage module. Versioned migrations, last-good recovery and offline settlement remain future requirements.
 - **Three.js GLTFLoader and AnimationMixer** for asset loading and animation, without writing redundant parsers.
 - **No physics engine by default**: use authored routes and simple collision queries for the first Floor. Evaluate Rapier only if a demonstrated gameplay requirement needs full rigid-body physics.
 - **Authored waypoint graph** for the first Floor, with reachable-distance targeting and deterministic stable-ID ties. Evaluate a maintained navigation library only if authored maps outgrow the graph contract.
 - **React useSyncExternalStore** with a typed immutable snapshot adapter for HUD state. No Zustand or additional state manager until concrete needs justify it; React never owns the gameplay tick.
 
-Record actual package versions, licenses, browser support and performance constraints when dependencies are added. Avoid a speculative managers/services framework; build the smallest complete vertical slice.
+Actual packages and exact versions are recorded in `package.json`/`package-lock.json`; direct runtime packages use MIT licenses. The production mobile browser matrix, minimum GPU class and measured performance budget remain open. Avoid a speculative managers/services framework; build the smallest complete vertical slice.
 
 ## Why not Phaser or React Three Fiber
 
@@ -61,6 +61,6 @@ Simulation steps and reward commits are independent from animation frame rate, s
 
 ## Remaining design decisions
 
-The **core stack is settled**. Implementation evidence is still needed for actual package versions and minimum browser class, measured fixed-step performance, viewport GPU budgets, first UI design approval and exact save schema. The initial waypoint navigation, no-physics default and React subscription approach are selected above; they are not installed implementations. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
+The **core stack is settled and installed**. The runtime uses a 30 Hz candidate fixed-step, one authored straight-line waypoint Floor, no physics dependency, a subscription-safe React HUD and an IndexedDB version-1 snapshot. These remain graybox contracts pending broader browser/device performance measurement, save migration/recovery and production page-design approval. These are normal engineering decisions **within** the agreed stack, not a reopening of the engine choice.
 
 Follow the [staged validation plan](validation-plan.md): functional graybox first; one integrated representative hero/enemy/island asset batch next; scale art and features only after rendered acceptance. Preserve originality and license provenance.
