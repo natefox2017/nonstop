@@ -144,6 +144,28 @@ describe("authored Floor and deterministic combat", () => {
     expect(dispatchCommand(lost.state, { type: "start-boss" }).state.phase).toBe("boss-battle");
   });
 
+  it("clears a defeated Boss and advances to the next Floor", () => {
+    const ready = runUntil(
+      { ...createInitialGameState(), floorNumber: 3, highestFloor: 3 },
+      (state) => state.phase === "boss-ready",
+    );
+    const started = dispatchCommand(ready, { type: "start-boss" }).state;
+    const boss = started.enemies[0];
+    if (!boss) throw new Error("Expected the Boss to start.");
+    const finalHit = stepGame({
+      ...started,
+      hero: { ...started.hero, position: { ...boss.position }, attackTimer: 0 },
+      enemies: [{ ...boss, health: 12, attackTimer: 10 }],
+    });
+
+    expect(finalHit.state.phase).toBe("floor-clear");
+    expect(finalHit.events).toContainEqual({ type: "enemy-defeated", enemyId: boss.id, isGoal: false });
+    expect(finalHit.events).toContainEqual({ type: "floor-cleared", floorNumber: 3 });
+
+    const next = runUntil(finalHit.state, (state) => state.floorNumber === 4);
+    expect(next).toMatchObject({ floorNumber: 4, highestFloor: 4, phase: "exploring", goalKills: 0 });
+  });
+
   it("keeps cooldowns authoritative and rejects a second cast", () => {
     const state: GameState = {
       ...createInitialGameState(),
@@ -154,6 +176,27 @@ describe("authored Floor and deterministic combat", () => {
     const second = dispatchCommand(first, { type: "cast-skill", skillId: "void" }).state;
     expect(first.skillCooldowns.void).toBeGreaterThan(0);
     expect(second.enemies[0]?.health).toBe(first.enemies[0]?.health);
+  });
+
+  it("emits presentation-only cast and hit events only for successful implemented casts", () => {
+    const initial = createInitialGameState();
+    const state: GameState = {
+      ...initial,
+      enemies: [{ ...enemy("event-target", 1, 0), health: 100, maxHealth: 100 }],
+      hero: { ...initial.hero, position: { x: 0, z: 0 } },
+    };
+    const accepted = dispatchCommand(state, { type: "cast-skill", skillId: "whirl" });
+    expect(accepted.events[0]).toMatchObject({
+      type: "skill-cast",
+      skillId: "whirl",
+      heroFrom: { x: 0, z: 0 },
+      heroTo: { x: 0, z: 0 },
+      targetId: "event-target",
+      affectedEnemyIds: ["event-target"],
+    });
+    expect(accepted.events).toContainEqual(expect.objectContaining({ type: "enemy-hit", enemyId: "event-target", source: "whirl" }));
+    expect(dispatchCommand(accepted.state, { type: "cast-skill", skillId: "whirl" }).events).toEqual([]);
+    expect(dispatchCommand(state, { type: "cast-skill", skillId: "slam" }).events).toEqual([]);
   });
 
   it("switches skills only within their slot and preserves each skill cooldown", () => {

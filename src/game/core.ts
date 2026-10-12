@@ -113,10 +113,11 @@ function defeatEnemy(state: GameState, enemy: Enemy, events: GameEvent[]): void 
   }
 }
 
-function applyDamage(state: GameState, enemy: Enemy, damage: number, events: GameEvent[]): void {
+function applyDamage(state: GameState, enemy: Enemy, damage: number, events: GameEvent[], source: "basic" | "whirl" | "leap" | "void"): void {
   const current = state.enemies.find((candidate) => candidate.id === enemy.id);
   if (!current || current.health <= 0 || damage <= 0) return;
   current.health = Math.max(0, current.health - damage);
+  events.push({ type: "enemy-hit", enemyId: current.id, damage, healthAfter: current.health, source, position: { ...current.position } });
   if (current.health === 0) defeatEnemy(state, current, events);
 }
 
@@ -179,16 +180,22 @@ export function dispatchCommand(state: GameState, command: GameCommand): StepRes
     defeatedGoalIds: [...state.defeatedGoalIds],
   };
   const events: GameEvent[] = [];
+  const heroFrom = { ...next.hero.position };
   if (command.skillId === "leap") {
     next.hero.position = moveToward(next.hero.position, target.position, 4.2);
   }
   const origin = command.skillId === "leap" ? target.position : next.hero.position;
+  const affectedEnemyIds: string[] = [];
   for (const enemy of [...next.enemies]) {
     const inRange = command.skillId === "void"
       ? enemy.id === target.id
       : distance(origin, enemy.position) <= skill.radius;
-    if (inRange) applyDamage(next, enemy, skill.damage, events);
+    if (inRange) {
+      affectedEnemyIds.push(enemy.id);
+      applyDamage(next, enemy, skill.damage, events, command.skillId as "whirl" | "leap" | "void");
+    }
   }
+  events.unshift({ type: "skill-cast", skillId: command.skillId as "whirl" | "leap" | "void", heroFrom, heroTo: { ...next.hero.position }, targetId: target.id, affectedEnemyIds });
   return { state: next, events };
 }
 
@@ -243,7 +250,10 @@ export function stepGame(state: GameState, deltaSeconds = STEP): StepResult {
     if (next.hero.attackTimer === 0) {
       next.hero.attackTimer = GRAYBOX_TUNING.heroAttackSeconds;
       const current = next.enemies.find((enemy) => enemy.id === target.id);
-      if (current) applyDamage(next, current, GRAYBOX_TUNING.heroAttackDamage, events);
+      if (current) {
+        events.push({ type: "basic-attack", targetId: current.id, position: { ...current.position } });
+        applyDamage(next, current, GRAYBOX_TUNING.heroAttackDamage, events, "basic");
+      }
     }
   }
 
@@ -257,6 +267,7 @@ export function stepGame(state: GameState, deltaSeconds = STEP): StepResult {
       next.hero.health = Math.max(0, next.hero.health - (
         enemy.kind === "boss" ? GRAYBOX_TUNING.bossAttackDamage : GRAYBOX_TUNING.enemyAttackDamage
       ));
+      events.push({ type: "hero-hit", damage: enemy.kind === "boss" ? GRAYBOX_TUNING.bossAttackDamage : GRAYBOX_TUNING.enemyAttackDamage, healthAfter: next.hero.health });
     }
   }
 
