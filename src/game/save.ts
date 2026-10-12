@@ -7,7 +7,8 @@ const STORE = "snapshots";
 const CURRENT_KEY = "current";
 const LAST_GOOD_KEY = "last-good";
 const QUARANTINED_KEY = "quarantined-current";
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
+const SKILL_IDS = ["whirl", "slam", "leap", "slash", "clone", "void"] as const;
 
 export type SaveLoadResult = {
   state: GameState | null;
@@ -37,8 +38,12 @@ function isGameState(value: unknown): value is GameState {
   if (!value || typeof value !== "object") return false;
   const state = value as GameState;
   const phases = ["exploring", "boss-ready", "boss-battle", "floor-clear"];
-  const skillIds = ["whirl", "leap", "void"];
-  return state.schemaVersion === 1
+  const skillFamilies: Record<string, readonly string[]> = {
+    slot1: ["whirl", "slam"],
+    slot2: ["leap", "slash"],
+    slot3: ["clone", "void"],
+  } as const;
+  return state.schemaVersion === 2
     && Number.isInteger(state.floorNumber) && state.floorNumber >= 1 && state.floorNumber <= 1000
     && Number.isInteger(state.highestFloor) && state.highestFloor >= state.floorNumber
     && phases.includes(state.phase)
@@ -60,8 +65,9 @@ function isGameState(value: unknown): value is GameState {
     && new Set(state.defeatedGoalIds).size === state.defeatedGoalIds.length
     && state.defeatedGoalIds.length === state.goalKills
     && state.defeatedGoalIds.every((id) => FLOOR_ONE.encounters.some((encounter) => encounter.goals.some((goal) => goal.id === id)))
-    && skillIds.every((id) => Number.isFinite(state.skillCooldowns?.[id as keyof GameState["skillCooldowns"]])
-      && state.skillCooldowns[id as keyof GameState["skillCooldowns"]] >= 0)
+    && state.skillLoadout !== null && typeof state.skillLoadout === "object"
+    && Object.entries(skillFamilies).every(([slot, family]) => family.includes(state.skillLoadout[slot as keyof typeof state.skillLoadout]))
+    && SKILL_IDS.every((id) => Number.isFinite(state.skillCooldowns?.[id]) && state.skillCooldowns[id] >= 0)
     && Number.isFinite(state.elapsedSeconds) && state.elapsedSeconds >= 0
     && Number.isFinite(state.floorClearTimer)
     && typeof state.paused === "boolean"
@@ -69,6 +75,26 @@ function isGameState(value: unknown): value is GameState {
     && (state.phase !== "boss-battle" || (state.floorNumber % 3 === 0 && state.goalKills === 20 && state.enemies.length === 1))
     && (state.phase !== "floor-clear" || (state.goalKills === 20 && state.enemies.length === 0))
     && (state.phase !== "exploring" || (state.goalKills < 20 && state.enemies.every((enemy) => enemy.kind === "goal")));
+}
+
+function normalizeGameState(value: unknown): GameState | undefined {
+  if (isGameState(value)) return value;
+  if (!value || typeof value !== "object" || (value as { schemaVersion?: unknown }).schemaVersion !== 1) return undefined;
+  const legacy = value as { skillCooldowns?: Partial<GameState["skillCooldowns"]> };
+  const migrated = {
+    ...value,
+    schemaVersion: 2,
+    skillLoadout: { slot1: "whirl", slot2: "leap", slot3: "void" },
+    skillCooldowns: {
+      whirl: legacy.skillCooldowns?.whirl,
+      slam: 0,
+      leap: legacy.skillCooldowns?.leap,
+      slash: 0,
+      clone: 0,
+      void: legacy.skillCooldowns?.void,
+    },
+  };
+  return isGameState(migrated) ? migrated : undefined;
 }
 
 function isFutureSchema(value: unknown): boolean {
@@ -116,14 +142,17 @@ export async function loadGameState(): Promise<SaveLoadResult> {
       return { state: null, status: "Save uses a newer version; progress is preserved without overwriting.", writable: false };
     }
     if (current === undefined) {
-      if (isGameState(lastGood)) {
-        return { state: lastGood, status: "Recovered last good save; damaged progress is preserved.", writable: true };
+      const recovered = normalizeGameState(lastGood);
+      if (recovered) {
+        return { state: recovered, status: "Recovered last good save; damaged progress is preserved.", writable: true };
       }
       return { state: null, status: "Autosave ready", writable: true };
     }
-    if (isGameState(current)) return { state: current, status: "Progress restored", writable: true };
-    if (isGameState(lastGood)) {
-      return { state: lastGood, status: "Recovered last good save; damaged progress is preserved.", writable: true };
+    const restored = normalizeGameState(current);
+    if (restored) return { state: restored, status: "Progress restored", writable: true };
+    const recovered = normalizeGameState(lastGood);
+    if (recovered) {
+      return { state: recovered, status: "Recovered last good save; damaged progress is preserved.", writable: true };
     }
     return { state: null, status: "Save could not be validated; preserved without overwriting.", writable: false };
   } catch (error) {
@@ -154,7 +183,8 @@ export async function saveGameState(state: GameState): Promise<void> {
             return;
           }
           if (current !== undefined) {
-            if (isGameState(current)) store.put(current, LAST_GOOD_KEY);
+            const previous = normalizeGameState(current);
+            if (previous) store.put(previous, LAST_GOOD_KEY);
             else store.put(current, QUARANTINED_KEY);
           }
           store.put(state, CURRENT_KEY);

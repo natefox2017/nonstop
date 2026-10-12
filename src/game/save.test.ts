@@ -84,7 +84,7 @@ describe("IndexedDB save recovery", () => {
   it("refuses future-schema progress and leaves it intact", async () => {
     const current = stateAtFloor(1);
     await saveGameState(current);
-    const future = { ...stateAtFloor(7), schemaVersion: 2 };
+    const future = { ...stateAtFloor(7), schemaVersion: 3 };
     await writeRecord("current", future);
 
     const loaded = await loadGameState();
@@ -95,7 +95,7 @@ describe("IndexedDB save recovery", () => {
   });
 
   it("blocks a database opened by a newer save schema", async () => {
-    const future = { ...stateAtFloor(9), schemaVersion: 2 };
+    const future = { ...stateAtFloor(9), schemaVersion: 3 };
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(DATABASE, 2);
       request.onupgradeneeded = () => {
@@ -111,6 +111,38 @@ describe("IndexedDB save recovery", () => {
     expect(loaded).toMatchObject({ state: null, writable: false });
     expect(loaded.status).toContain("newer version");
     await expect(saveGameState(stateAtFloor(1))).rejects.toMatchObject({ name: "VersionError" });
+  });
+
+  it("migrates valid version-1 cooldown saves without losing current progress", async () => {
+    const old = stateAtFloor(6);
+    const legacy = {
+      ...old,
+      schemaVersion: 1,
+      skillLoadout: undefined,
+      skillCooldowns: { whirl: 2.5, leap: 3.5, void: 4.5 },
+    };
+    await writeRecord("current", legacy);
+
+    const loaded = await loadGameState();
+    expect(loaded.state).toMatchObject({
+      schemaVersion: 2,
+      floorNumber: 6,
+      skillLoadout: { slot1: "whirl", slot2: "leap", slot3: "void" },
+      skillCooldowns: { whirl: 2.5, slam: 0, leap: 3.5, slash: 0, clone: 0, void: 4.5 },
+    });
+
+    if (!loaded.state) throw new Error("Expected the legacy save to migrate.");
+    await saveGameState(loaded.state);
+    expect(await readRecord("last-good")).toMatchObject({ schemaVersion: 2, floorNumber: 6 });
+    expect(await readRecord("current")).toMatchObject({ schemaVersion: 2, floorNumber: 6 });
+  });
+
+  it("rejects a skill equipped in a slot outside its documented family", async () => {
+    const invalid = {
+      ...stateAtFloor(1),
+      skillLoadout: { slot1: "slash", slot2: "leap", slot3: "void" },
+    };
+    await expect(saveGameState(invalid as GameState)).rejects.toThrow("invalid game snapshot");
   });
 
   it("rolls back both snapshot writes when the current write fails", async () => {
