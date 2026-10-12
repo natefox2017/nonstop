@@ -144,6 +144,28 @@ describe("authored Floor and deterministic combat", () => {
     expect(dispatchCommand(lost.state, { type: "start-boss" }).state.phase).toBe("boss-battle");
   });
 
+  it("clears a defeated Boss and advances to the next Floor", () => {
+    const ready = runUntil(
+      { ...createInitialGameState(), floorNumber: 3, highestFloor: 3 },
+      (state) => state.phase === "boss-ready",
+    );
+    const started = dispatchCommand(ready, { type: "start-boss" }).state;
+    const boss = started.enemies[0];
+    if (!boss) throw new Error("Expected the Boss to start.");
+    const finalHit = stepGame({
+      ...started,
+      hero: { ...started.hero, position: { ...boss.position }, attackTimer: 0 },
+      enemies: [{ ...boss, health: 12, attackTimer: 10 }],
+    });
+
+    expect(finalHit.state.phase).toBe("floor-clear");
+    expect(finalHit.events).toContainEqual({ type: "enemy-defeated", enemyId: boss.id, isGoal: false });
+    expect(finalHit.events).toContainEqual({ type: "floor-cleared", floorNumber: 3 });
+
+    const next = runUntil(finalHit.state, (state) => state.floorNumber === 4);
+    expect(next).toMatchObject({ floorNumber: 4, highestFloor: 4, phase: "exploring", goalKills: 0 });
+  });
+
   it("keeps cooldowns authoritative and rejects a second cast", () => {
     const state: GameState = {
       ...createInitialGameState(),
