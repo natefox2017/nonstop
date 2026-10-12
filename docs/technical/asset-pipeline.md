@@ -1,10 +1,10 @@
 # Future Asset Production Plan
 
-This repository currently contains **no models or textures**. Three.js renders 3D scenes and procedural geometry; Blender is useful for modeling, UVs, rigging, animation and repairing imported assets, but is **not mandatory** for this game. Use commercially permitted existing glTF assets and simple geometry before commissioning unique meshes.
+This repository currently contains **no models or textures**. Three.js renders 3D scenes and procedural geometry; Blender is useful for modeling, UVs, rigging, animation and repairing imported assets, but is **not mandatory** for this game. Use commercially permitted existing glTF assets and simple geometry before commissioning unique meshes. Target an original chibi adventure look with rounded low-complexity silhouettes, simplified materials, expressive short animation clips and shared modular equipment attachments. Do not reuse recognizable Pokémon designs or franchise assets.
 
 ## Sequence and gates
 
-1. Freeze the portrait camera, scale, level route, actor movement, animation events and approved style with a functioning primitive graybox of one Floor.
+1. Freeze the portrait camera, scale, level route, actor movement, animation events and approved chibi style with a functioning primitive graybox of one Floor. Validate oversized-head silhouettes, visibility of gear and skill effects at gameplay scale.
 2. Integrate exactly one representative original/licensed hero, one enemy, one island section/prop and a tiny animation set (`idle`, `run`, `attack`, `hit`, `death`). Test them in the actual browser viewport.
 3. Once readable and performant, author the Boss, remaining enemies, equipment variants, skill VFX and UI icons in small integrated batches. No requirement to draw all models before programming.
 4. Before expanding a large catalog, freeze visual identity, GLB export rules, skeleton/attachment points, source rights and real frame-time/texture budgets.
