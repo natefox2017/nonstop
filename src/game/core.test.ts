@@ -40,7 +40,8 @@ describe("authored Floor and deterministic combat", () => {
     expect(isAscensionEligible({ floorNumber: 19 })).toBe(false);
     expect(isAscensionEligible({ floorNumber: 20 })).toBe(true);
     expect(isAscensionEligible({ floorNumber: 1000 })).toBe(true);
-    expect(isAscensionEligible({ floorNumber: 1 })).toBe(false);
+    const lifetimeHigh = { ...createInitialGameState(), highestFloor: 20 };
+    expect(isAscensionEligible(lifetimeHigh)).toBe(false);
   });
 
   it("counts one registered goal death once", () => {
