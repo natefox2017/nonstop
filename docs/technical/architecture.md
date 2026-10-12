@@ -1,6 +1,6 @@
 # Web Game Architecture — Approved Stack
 
-This is the architecture for the **approved Three.js + React + strict TypeScript** browser implementation. It is a design, not current code: the repository has no `src/` directory yet. Blender is optional and never required at runtime.
+This is the architecture for the **approved Three.js + React + strict TypeScript** browser implementation. The current code implements the Gate 1 graybox in `src/`; later systems in this document remain target architecture. Blender is optional and never required at runtime.
 
 ## Ownership and update model
 
@@ -21,20 +21,21 @@ Browser input (pointer/touch/keyboard)
 
 **Single authority rule:** GameCore is the only writer of combat state, objective credit, equipment/rewards, cooldowns and Floor progression. Neither animation mixer events, React effect hooks, physics callbacks nor UI timers may grant independent kills or items. Resolve one authoritative combat hit at a scheduled gameplay contact time; send the resulting event to presentation for FX/SFX. Animation may display hit anticipation without deciding damage.
 
-Start with one main-thread fixed-timestep loop (candidate 30 simulation ticks/sec; `TO TUNE` with benchmarks) and `requestAnimationFrame` rendering interpolation. Cap catch-up steps after a long inactive tab; do **not** simulate hours by running gameplay ticks in the background. On resumed focus, apply the pure offline settlement once from the persisted checkpoint and save. Maintain a monotonic session clock for play time; use wall-clock differences only at offline settlement boundaries.
+The graybox runs a main-thread 30 Hz fixed-step loop with `requestAnimationFrame` rendering. It caps catch-up at five steps and does not simulate background time. Offline settlement from a persisted checkpoint remains a later implementation requirement.
 
-## Planned source boundaries (none exists yet)
+## Current and planned source boundaries
 
-| Future location | Responsibility | Must not own |
+| Location | Responsibility | Must not own |
 | --- | --- | --- |
-| `src/game/core/` | Floor state machine, deterministic rules, actors and commands | DOM, Three.js mesh or storage API |
+| `src/game/core.ts`, `floor.ts`, `types.ts`, `tuning.ts` | Current deterministic Floor loop, authored template, state/command types and provisional pacing | DOM, Three.js mesh or storage API |
+| `src/game/store.ts`, `src/game/save.ts` | Current external-store adapter and IndexedDB version-1 whole-state snapshots | Combat and reward rules |
+| `src/game/core.test.ts` | Current deterministic core tests | Live player state |
 | `src/game/catalogs/` | Versioned skills, items, chests, tuning and stable IDs | Event listeners and UI translations |
-| `src/game/maps/` | Authored templates, route/arena geometry, spawns, path projection | Generated random terrain or artwork exports |
-| `src/game/persistence/` | Validation/migration, transactional snapshot, offline calculation | Direct scene mutation or rewards outside core |
-| `src/render/` | Three.js scene, GLTFLoader, AnimationMixer, camera, effects and geometry | Hit/kill/reward authority |
-| `src/ui/` | React panels, styles, localization, accessibility and command dispatch | Game tick timers and save rewriting |
-| `src/app/` | Startup, dependency wiring, input focus/pause, lifecycle and diagnostics | Parallel gameplay rule copies |
-| `tests/` | Unit tests, controlled integration fixtures and browser acceptance | Live player state |
+| `src/game/maps/` | Future additional authored templates, route/arena geometry and path projection | Generated random terrain or artwork exports |
+| `src/render/WorldRenderer.ts` | Current procedural Three.js scene, camera, geometry and character placeholders | Hit/kill/reward authority |
+| `src/ui/App.tsx`, `src/ui/styles.css` | Current responsive graybox HUD, accessibility and command dispatch | Game tick timers and save rewriting |
+| `src/app/startRuntime.ts` | Current startup and capped fixed-step loop | Parallel gameplay rule copies |
+| `src/game/persistence/` | Future migrations, last-good recovery and offline calculation | Direct scene mutation or rewards outside core |
 
 No manager, event bus, service container, multiplayer layer or backend should be created without its first concrete consumer and acceptance case. Use Three.js native loaders/animation/camera features instead of rebuilding existing functionality. Introduce a third-party navmesh/physics dependency only when real geometry and tests show why a simpler authored solution fails.
 
@@ -43,6 +44,7 @@ No manager, event bus, service container, multiplayer layer or backend should be
 - 4 ordered encounters × 5 registered goal enemies = 20 valid kills per Floor.
 - Every third Floor: Boss Ready at 20/20; BATTLE normally required; farming remains non-goal.
 - Only `GameCore` grants objective credit on one registered death event. Reject duplicate callbacks/replayed damage.
+- The graybox uses Whirl, Leap and Void as three fixed representative skills; the six-skill choice catalog and forms are not implemented yet.
 - Six skills in three two-choice families; loadout changes preserve current cooldowns; Boss start refreshes them.
 - Gear has exactly Weapon, Armor and Cloak slots; reward and next checkpoint commit together.
 - Death and Ascension change the run epoch, invalidating pending callbacks; offline never resolves a Boss.
@@ -65,4 +67,4 @@ Run/soft-pause/visibility changes preserve a coherent checkpoint and do not sett
 
 ## Scope boundary
 
-The first slice is one authored continuous floating landmass and one fully verified automatic Floor, using primitives/temporary legal assets. It is **not** an infinite terrain generator, a complete art catalog or a mobile app release. Use [validation gates](validation-plan.md) before expanding content.
+The first slice is one authored continuous floating landmass and one automatic Floor, using procedural placeholder geometry. It is **not** a production art acceptance, infinite terrain generator, complete art catalog or mobile app release. Use [validation gates](validation-plan.md) before expanding content.

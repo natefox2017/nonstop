@@ -1,6 +1,6 @@
 # Contributing
 
-This is a fresh documentation-only repository with an approved **Three.js + React + TypeScript** browser stack. Blender is optional. No runnable game, models, tests, package manifest or historical implementation branches are present.
+This repository contains a runnable Gate 1 graybox using the approved **Three.js + React + TypeScript** browser stack. Blender is optional. The current runtime is deliberately limited to one primitive Floor template and its automated combat loop; it does not yet include production models or full equipment/progression systems.
 
 Start with [README](README.md), [AGENTS](AGENTS.md), [core loop](docs/product/core-loop.md), [architecture](docs/technical/architecture.md) and [implementation gates](docs/technical/validation-plan.md).
 
@@ -18,3 +18,5 @@ Start with [README](README.md), [AGENTS](AGENTS.md), [core loop](docs/product/co
 Game mechanics must be deterministic and independently testable. Keep combat authority separate from React and Three.js. Test small portrait sizes and browser focus/resize behavior. Once there is executable code, run relevant tests and report exact results; do not claim a game can boot yet.
 
 All repository text is English. Use original art, designs, sound and writing. External code/models/animations require known commercial-use, modification and distribution rights, provenance and attribution. Never import proprietary reference-game material. Add visual assets only after a representative tested slice and design review.
+
+Run `npm test` for deterministic core-rule tests and `npm run build` for strict TypeScript plus the production Vite build. Verify gameplay in a browser; a successful build alone is not playable acceptance.

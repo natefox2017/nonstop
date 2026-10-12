@@ -1,44 +1,45 @@
 # Nevercrest — Nonstop Knight-inspired 3D Auto-Combat RPG
 
-This is a **fresh, documentation-only repository**, initialized without the former game's Git history, code, assets or build artifacts. It contains product requirements and the technical design for a new implementation. **No game is currently runnable.**
+Nevercrest is a portrait browser game built with **Three.js, React and TypeScript**. The current runnable slice is a primitive 3D graybox that exercises one authored floating-island Floor. Its combat and tuning are original; the project does not include assets or code from the 2016 reference game.
 
-## Finalized technology choice
+## Current playable slice
 
-**Three.js + React + TypeScript** is the approved stack:
+- The knight automatically follows the authored route, targets reachable enemies and performs basic attacks.
+- Each Floor contains four ordered encounters with five registered goal enemies apiece. Only those 20 enemies count toward the objective.
+- Ordinary Floors clear and advance automatically. Every third Floor stops at **Boss Ready** until the player presses **BATTLE**. The Boss fights automatically after that command.
+- The HUD has exactly three active skills—Whirl, Leap and Void—with gameplay-owned cooldowns. Buttons and keys 1–3 use the same commands. Pause and Resume halt the simulation.
+- The complete current `GameState` is saved to IndexedDB, with a periodic save and saves on commands and phase changes. Reload restores the snapshot.
+- A single hand-authored waypoint Floor definition and procedural primitive meshes form the current graybox. Combat values in [`tuning.ts`](src/game/tuning.ts) are provisional pacing values, not claims about reference balance.
 
-- **Three.js:** WebGL 3D rendering, camera, GLB/glTF loading, animations and skill VFX.
-- **React + HTML/CSS:** portrait HUD, inventory, skill selection, Boss rewards, settings and responsive overlays.
-- **TypeScript:** deterministic gameplay rules, catalogs, navigation interfaces and versioned saves.
-- **Blender:** optional, used only when authored 3D geometry, rigging, animation edits or export processing is needed.
+This is Gate 1 graybox acceptance, not production art or full feature parity. The remaining core-loop contract includes the six-skill choice catalog, equipment and chests, reliable save recovery/migrations, offline settlement and current-run Floor-20 Ascension. These are not present in this runtime yet. See [the product brief](docs/product/product-brief.md), [core loop](docs/product/core-loop.md) and [validation stages](docs/technical/validation-plan.md).
 
-A lightweight browser toolchain, navigation/collision libraries and automated test tools will be selected during the first implementation slice. They are **not installed or pinned yet**. See the [technical decision](docs/technical/stack-decision.md) and [architecture](docs/technical/architecture.md).
+## Run locally
 
-## Gameplay target
+Requires Node.js 20.19+ or 22.12+ and npm. The package lock pins the actual versions.
 
-Independently recreate the publicly observable **2016 Nonstop Knight** single-player auto-combat progression loop, with original characters, art, UI and authored continuous floating-landmass Floors. Do not copy proprietary source, meshes, audio, icons, level layouts or internal balance tables.
+```sh
+npm install
+npm run dev
+```
 
-Key requirements: automatic navigation/targeting/basic attacks; **no joystick**; four encounters × five valid goal enemies = **20 kills per Floor**; Boss Ready after every third Floor and explicit BATTLE; exactly three active skill slots with six selectable base skills; exactly Weapon, Armor and Cloak gear; offline progress never starts or defeats Bosses; current-run Floor 20 enables Ascension; launch-line parity scope through Floor 1000. Portrait-only layout is the approved direction.
+Open the local URL printed by Vite in a portrait browser. The game plays without mouse steering or a basic-attack button. Use the three skill buttons or keys 1–3, press **BATTLE** on Boss Floors, and pause with the top-right control or `P`.
 
-## Documentation
+## Validate
 
-**Product**
-- [Product brief](docs/product/product-brief.md)
+```sh
+npm test
+npm run build
+```
+
+The deterministic core tests cover Floor shape, stable target ties, one-time kill credit, 20-goal Floor clear/advance, every-third-Floor Boss Ready and explicit Boss start, and skill cooldown rejection. Browser screenshots and smoke captures live under [`output/playwright/`](output/playwright/).
+
+## Project contracts
+
 - [Core gameplay and state transitions](docs/product/core-loop.md)
 - [2016 reference baseline](docs/product/reference-gameplay-baseline.md) and [parity/evidence policy](docs/product/reference-parity-policy.md)
-- [Portrait HUD](docs/product/hud-layout.md), [visual direction](docs/product/visual-direction.md) and [localization](docs/product/localization.md)
-
-**Engineering**
-- [Finalized technical stack](docs/technical/stack-decision.md)
-- [Architecture](docs/technical/architecture.md) and [data contracts](docs/technical/data-contracts.md)
-- [Model and optional Blender workflow](docs/technical/asset-pipeline.md)
-- [Save/offline integrity](docs/technical/persistence-and-offline.md)
-- [Implementation and acceptance stages](docs/technical/validation-plan.md)
+- [Portrait HUD](docs/product/hud-layout.md) and [visual direction](docs/product/visual-direction.md)
+- [Approved technology stack](docs/technical/stack-decision.md), [architecture](docs/technical/architecture.md) and [data contracts](docs/technical/data-contracts.md)
+- [Save and offline contract](docs/technical/persistence-and-offline.md) and [asset pipeline](docs/technical/asset-pipeline.md)
 - [Development rules](AGENTS.md) and [contributing](CONTRIBUTING.md)
 
-## Working agreement
-
-The repository intentionally starts with **no GitHub Issues or development backlog**. There is no active Linear issue board or requirement to create one. Use focused development tasks and the current repository files as the source of truth; create Issues or a tracking board only if the owner explicitly requests it. Prefer existing open-source tooling to custom infrastructure.
-
-The first implementation goal is a playable, deterministic, portrait **graybox Floor** with a Three.js scene and simple React HUD. Real character/terrain models are produced after their camera, navigation and animation contracts are validated. See [acceptance gates](docs/technical/validation-plan.md).
-
-Keep future commits confined to the new repository history. No historical Godot implementation is imported.
+The repository has no active Linear board or GitHub issue backlog. Use the current repository requirements and scoped work; do not import tasks or artifacts from another project.
