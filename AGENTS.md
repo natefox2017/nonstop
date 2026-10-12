@@ -29,6 +29,10 @@ Use the approved original Pokémon-inspired chibi 3D visual direction in [visual
 
 See [core loop](docs/product/core-loop.md), [parity policy](docs/product/reference-parity-policy.md), [HUD](docs/product/hud-layout.md) and [technical contracts](docs/technical/data-contracts.md).
 
+## Standards and task authority
+
+Follow the [central engineering standard](https://github.com/natefox2017/agents-md/blob/main/AGENTS.md) selectively with the [Three.js](https://github.com/natefox2017/agents-md/blob/main/profiles/THREEJS.md), [Web game](https://github.com/natefox2017/agents-md/blob/main/profiles/WEB_GAMES.md) and [3D game](https://github.com/natefox2017/agents-md/blob/main/profiles/GAME_3D.md) profiles. The [asset delivery contract](https://github.com/natefox2017/agents-md/blob/main/profiles/ASSET_DELIVERY.md) applies only to actual asset tasks. This documentation-only repository has no installed framework packages, executable game, test runner or active Linear Board; do not claim otherwise. Use the [stack decision](docs/technical/stack-decision.md) for the selected Vite, Three.js, React, Vitest, Playwright, waypoint and persistence approach; Phaser and React Three Fiber are not selected. Future code and commands must be verified from actual files before use.
+
 ## Lightweight development workflow
 
 No active Linear board, GitHub Issue backlog or mandatory task-claim system is established for this fresh repository. **Do not recreate or import old tasks.** Work directly from the current explicit request; only set up a tracker when the owner asks for one. For a complex independent task, write a zero-context executable specification: goal, current files/interfaces, behavior, edge cases, constraints, tests and acceptance. Keep small one-off changes lightweight.
