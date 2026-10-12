@@ -49,7 +49,7 @@ export function createAudioFeedback(initiallyMuted = false) {
   }
 
   function unlock(): void {
-    if (muted || !pageVisible) return;
+    if (muted || paused || !pageVisible) return;
     if (!context) context = new AudioContext();
     resume();
   }

@@ -74,6 +74,20 @@ describe("audio feedback lifecycle", () => {
     expect(MockAudioContext.instances[0]?.resume).toHaveBeenCalledOnce();
   });
 
+  it("does not unlock audio when a paused game is unmuted", async () => {
+    const audio = createAudioFeedback(true);
+    audio.setPaused(true);
+
+    audio.setMuted(false);
+    audio.unlock();
+    expect(MockAudioContext.instances).toHaveLength(0);
+
+    audio.setPaused(false);
+    audio.unlock();
+    expect(MockAudioContext.instances).toHaveLength(1);
+    await vi.waitFor(() => expect(MockAudioContext.instances[0]?.state).toBe("running"));
+  });
+
   it("stops current tones on mute and does not replay them when unmuted", async () => {
     const audio = createAudioFeedback();
     audio.unlock();

@@ -45,7 +45,10 @@ export function App() {
   useEffect(() => {
     const audio = createAudioFeedback(audioMuted);
     audioFeedback.current = audio;
-    const unlock = () => audio.unlock();
+    const unlock = () => {
+      audio.setPaused(gameStore.getSnapshot().paused);
+      audio.unlock();
+    };
     const updatePageVisibility = () => audio.setPageVisible(document.visibilityState === "visible");
     const onPageHide = () => audio.setPageVisible(false);
     window.addEventListener("pointerdown", unlock);
@@ -74,6 +77,7 @@ export function App() {
 
   const toggleAudio = () => {
     const nextMuted = !audioMuted;
+    audioFeedback.current?.setPaused(gameStore.getSnapshot().paused);
     setAudioMuted(nextMuted);
     const saved = writeAudioMuted(nextMuted);
     setAudioPreferenceMessage(saved ? "" : "Audio changed for this session, but the preference could not be saved.");
