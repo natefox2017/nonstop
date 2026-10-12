@@ -6,6 +6,10 @@ import { disposeObjectResources } from "./dispose";
 
 const material = (color: string, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
 const ACTOR_ASSET_ROOT = "/assets/cc0-test-set/";
+const CAMERA_YAW = Math.PI / 4;
+const CAMERA_ELEVATION = THREE.MathUtils.degToRad(50);
+const CAMERA_HORIZONTAL_DISTANCE = 22;
+const CAMERA_VIEW_HEIGHT = 28;
 
 type AnimatedActor = {
   root: THREE.Group;
@@ -159,9 +163,13 @@ export function mountWorld(container: HTMLElement): () => void {
   scene.background = new THREE.Color("#b9dfec");
   scene.fog = new THREE.FogExp2("#b9dfec", 0.009);
 
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 180);
-  camera.position.set(3, 19, 26);
-  camera.lookAt(0, 0, 0);
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 180);
+  const cameraOffset = new THREE.Vector3(
+    Math.sin(CAMERA_YAW) * CAMERA_HORIZONTAL_DISTANCE,
+    Math.tan(CAMERA_ELEVATION) * CAMERA_HORIZONTAL_DISTANCE,
+    Math.cos(CAMERA_YAW) * CAMERA_HORIZONTAL_DISTANCE,
+  );
+  const cameraFocus = new THREE.Vector3();
 
   let renderer: THREE.WebGLRenderer;
   try {
@@ -255,6 +263,15 @@ export function mountWorld(container: HTMLElement): () => void {
     scene.add(actor.root);
     playActor(actor, "Melee_Unarmed_Idle", 0, true);
   };
+  const addBossReadyPreview = (floorNumber: number) => {
+    if (!barbarianSource) return;
+    const id = `boss-${floorNumber}`;
+    if (modelEnemies.has(id)) return;
+    const actor = makeModel(barbarianSource, 3.4);
+    modelEnemies.set(id, actor);
+    scene.add(actor.root);
+    playActor(actor, "Melee_Unarmed_Idle", 0, true);
+  };
   void Promise.all([
     import("three/addons/loaders/GLTFLoader.js"),
     import("three/addons/utils/SkeletonUtils.js"),
@@ -281,6 +298,7 @@ export function mountWorld(container: HTMLElement): () => void {
     scene.add(modelHero.root);
     playActor(modelHero, "Idle_A", 0, true);
     for (const enemy of latest.enemies) addEnemyModel(enemy);
+    if (latest.phase === "boss-ready") addBossReadyPreview(latest.floorNumber);
     usingModels = true;
     hero.visible = false;
     for (const mesh of enemyMeshes.values()) mesh.visible = false;
@@ -333,7 +351,11 @@ export function mountWorld(container: HTMLElement): () => void {
   const resize = () => {
     const width = Math.max(container.clientWidth, 1);
     const height = Math.max(container.clientHeight, 1);
-    camera.aspect = width / height;
+    const aspect = width / height;
+    camera.left = -CAMERA_VIEW_HEIGHT * aspect / 2;
+    camera.right = CAMERA_VIEW_HEIGHT * aspect / 2;
+    camera.top = CAMERA_VIEW_HEIGHT / 2;
+    camera.bottom = -CAMERA_VIEW_HEIGHT / 2;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
   };
@@ -354,11 +376,15 @@ export function mountWorld(container: HTMLElement): () => void {
     if (target) {
       hero.rotation.y = Math.atan2(target.position.x - state.hero.position.x, target.position.z - state.hero.position.z);
     }
-    const desiredCamera = new THREE.Vector3(state.hero.position.x + 1.5, 18, state.hero.position.z + 23);
-    camera.position.lerp(desiredCamera, 0.045);
-    camera.lookAt(state.hero.position.x, 0.7, state.hero.position.z - 0.3);
+    cameraFocus.set(state.hero.position.x, 0.8, state.hero.position.z);
+    camera.position.copy(cameraFocus).add(cameraOffset);
+    camera.lookAt(cameraFocus);
 
-    const visibleEnemyIds = new Set(state.enemies.map((enemy) => enemy.id));
+    const previewBoss = state.phase === "boss-ready"
+      ? { id: `boss-${state.floorNumber}`, kind: "boss" as const, position: FLOOR_ONE.bossArena }
+      : undefined;
+    const displayedEnemies = previewBoss ? [...state.enemies, previewBoss] : state.enemies;
+    const visibleEnemyIds = new Set(displayedEnemies.map((enemy) => enemy.id));
     for (const [id, mesh] of enemyMeshes) {
       if (!visibleEnemyIds.has(id)) {
         scene.remove(mesh);
@@ -366,7 +392,7 @@ export function mountWorld(container: HTMLElement): () => void {
         enemyMeshes.delete(id);
       }
     }
-    for (const enemy of state.enemies) {
+    for (const enemy of displayedEnemies) {
       let mesh = enemyMeshes.get(enemy.id);
       if (!mesh) {
         mesh = makeEnemy(enemy.kind === "boss");
@@ -389,24 +415,27 @@ export function mountWorld(container: HTMLElement): () => void {
       modelHero.mixer.update(dt);
 
       for (const enemy of state.enemies) addEnemyModel(enemy);
+      if (previewBoss) addBossReadyPreview(state.floorNumber);
       for (const [id, actor] of modelEnemies) {
         const enemy = state.enemies.find((candidate) => candidate.id === id);
-        if (!enemy && (!actor.dyingUntil || now >= actor.dyingUntil)) {
+        const preview = previewBoss?.id === id ? previewBoss : undefined;
+        const visualEnemy = enemy ?? preview;
+        if (!visualEnemy && (!actor.dyingUntil || now >= actor.dyingUntil)) {
           scene.remove(actor.root);
           modelEnemies.delete(id);
           continue;
         }
-        if (enemy) {
-          const dx = enemy.position.x - state.hero.position.x;
-          const dz = enemy.position.z - state.hero.position.z;
+        if (visualEnemy) {
+          const dx = visualEnemy.position.x - state.hero.position.x;
+          const dz = visualEnemy.position.z - state.hero.position.z;
           const distance = Math.hypot(dx, dz) || 1;
-          const visualSeparation = enemy.kind === "boss" ? 0.6 : 0.3;
+          const visualSeparation = enemy ? (enemy.kind === "boss" ? 0.6 : 0.3) : 0;
           actor.root.position.set(
-            enemy.position.x + dx / distance * visualSeparation,
+            visualEnemy.position.x + dx / distance * visualSeparation,
             actor.groundOffset,
-            enemy.position.z + dz / distance * visualSeparation,
+            visualEnemy.position.z + dz / distance * visualSeparation,
           );
-          actor.root.rotation.y = Math.atan2(state.hero.position.x - enemy.position.x, state.hero.position.z - enemy.position.z);
+          actor.root.rotation.y = Math.atan2(state.hero.position.x - visualEnemy.position.x, state.hero.position.z - visualEnemy.position.z);
           if (now >= actor.busyUntil && !actor.dyingUntil) playActor(actor, "Melee_Unarmed_Idle", 0, true);
         }
         actor.mixer.update(dt);
